@@ -86,9 +86,17 @@ After builder returns, read `build-summary.md`:
 - If **STATUS: partial** → show what was done and what wasn't, ask how to proceed
 - If **STATUS: success** → report: "Build done — X commits, Y files."
 
-Update state.md: build → done.
+Present a summary of what was built: list commits, files changed, and any notable decisions the builder made.
 
-Say: **"Build complete. Running judgment day next — dual blind review + QA. Continue? [yes / skip / stop]"**
+Ask: **"Build complete. Review the changes? [approve / inspect / revert / stop]"**
+- **approve**: update state.md: build → done, continue to verify
+- **inspect**: tell user to review with `git log` / `git diff`, then ask again
+- **revert**: revert builder commits, ask how to adjust
+- **stop**: update state.md: build → done, exit
+
+Do NOT proceed without confirmation.
+
+After approval, say: **"Running judgment day next — dual blind review + QA. Continue? [yes / skip / stop]"**
 
 ---
 
@@ -155,7 +163,14 @@ If verify is skipped, warn: **"Shipping without review. Confirm? [yes / run veri
 2. For missing artifacts, use: "Phase not run" in the PR body
 3. Check `git status` — if uncommitted changes exist, show them and ask: **"Uncommitted changes found. Commit these? [yes / no / abort]"**. NEVER auto-commit without asking.
 4. If on base branch (main/master), abort: **"You're on the base branch. Create a feature branch first."**
-5. Push and create PR:
+5. Ask: **"Ready to push and create PR? [yes / review first / abort]"**
+   - **yes**: proceed
+   - **review first**: let user inspect, then ask again
+   - **abort**: save state, exit
+
+   Do NOT push or create PR without confirmation.
+
+6. Push and create PR:
 
 ```markdown
 ## Summary
@@ -177,7 +192,7 @@ If verify is skipped, warn: **"Shipping without review. Confirm? [yes / run veri
 Built with [micro-squad](https://github.com/SebastianPuchet/micro-squad)
 ```
 
-6. Share PR URL. Update state.md: ship → done.
+7. Share PR URL. Update state.md: ship → done.
 
 ```
 Sprint complete: <description>

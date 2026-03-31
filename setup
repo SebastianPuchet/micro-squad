@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SKILLS_DIR="$HOME/.claude/skills"
+
+echo "micro-squad — installing skills..."
+echo ""
+
+# Skills to install
+SKILLS=(squad think plan build verify secure investigate ship retro)
+
+for skill in "${SKILLS[@]}"; do
+    target="$SKILLS_DIR/$skill"
+    mkdir -p "$target"
+
+    # Remove existing symlink if present
+    [ -L "$target/SKILL.md" ] && rm "$target/SKILL.md"
+
+    ln -sf "$SCRIPT_DIR/$skill/SKILL.md" "$target/SKILL.md"
+    echo "  ✓ /$skill"
+done
+
+# Symlink shared files
+mkdir -p "$SKILLS_DIR/micro-squad-shared"
+for file in orchestrator-contract.md agent-prompts.md; do
+    [ -L "$SKILLS_DIR/micro-squad-shared/$file" ] && rm "$SKILLS_DIR/micro-squad-shared/$file"
+    ln -sf "$SCRIPT_DIR/_shared/$file" "$SKILLS_DIR/micro-squad-shared/$file"
+done
+echo "  ✓ shared conventions"
+
+echo ""
+echo "Installed ${#SKILLS[@]} skills to $SKILLS_DIR/"
+echo ""
+echo "Usage:"
+echo "  /squad add dark mode        full sprint"
+echo "  /think notifications        brainstorm"
+echo "  /verify                     judgment day"
+echo "  /investigate login bug      debug"
+echo ""
+echo "Done."

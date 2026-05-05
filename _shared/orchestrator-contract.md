@@ -108,6 +108,7 @@ Keep artifacts concise. Bloated artifacts waste tokens for downstream phases.
 | think.md | ~400 words | Problem + Q&A + approaches + decision |
 | architecture.md | ~800 words | Data flow + file changes + edge cases |
 | scout-report.md | ~600 words | Patterns + reusable code + risks |
+| exploration.md | ~500 words | Current State + Affected Areas + Approaches |
 | plan.md | ~600 words | Merged architecture + scout + steps |
 | build-log.md | 1 row per commit | Table only |
 | build-summary.md | ~300 words | Stats + blockers + deviations |

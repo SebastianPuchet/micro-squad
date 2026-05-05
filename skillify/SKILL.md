@@ -1,6 +1,6 @@
 ---
 name: skillify
-description: "Scaffold a new micro-squad skill — generates SKILL.md, registers in setup and AGENTS.md"
+description: "Scaffold a new micro-squad skill: prompts for name + tools, generates SKILL.md, registers in setup + AGENTS.md + CLAUDE.md"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 ---
 
@@ -36,10 +36,17 @@ Ask in order. Validate each before continuing.
 
    If validation fails, refuse to proceed and prompt for a new name. Do NOT pass the supplied name to any shell command, file path, or Edit insertion as-is until it passes the regex.
 
-   Collision check (only after validation passes): list `~/.claude/skills/*/SKILL.md` and the local skill directories. If the name already exists, abort:
+   Collision check (only after validation passes): list `~/.claude/skills/*/SKILL.md` and the local skill directories. If the name already exists, present a Decision Point:
    ```
-   Skill `<name>` already exists at <path>. Pick a new name.
+   Skill `<name>` already exists at <path>.
+
+   Recommendation: A (pick a different name) because overwriting an installed skill silently breaks anyone depending on it.
+
+   A) pick a different name — prompt inline for a new name and re-run validation — effort: trivial
+   B) overwrite existing — replace the SKILL.md at <path> — effort: trivial (risk: silent breakage)
+   C) abort — effort: trivial
    ```
+   Do not silently abort with a bare error.
 
 2. **Description.** One line, concrete. Voice: direct, builder-oriented.
 
@@ -130,8 +137,24 @@ Edit `<repo-root>/AGENTS.md`:
 1. **Read the file first** with the Read tool.
 2. Find the command table literally in the read output. Identify the exact row above which the new row will be inserted.
 3. Use the Edit tool with `old_string` set to a literal multi-line snippet from the file (e.g., the row above + the row below) and insert `| \`/<name>\` | <description> |` between them. Never construct paths or table cells via shell interpolation.
-4. If standalone, add to the dep graph under the standalone line. If phase-dependent, add to the appropriate phase position. Same Edit-tool, literal-snippet rule applies.
+4. **Dep-graph injection (exact target).** AGENTS.md contains a fenced ASCII dep graph with multiple `standalone` entries — currently `investigate`, `retro`, `explore`, `skillify`. The existing block looks like:
+   ```
+   investigate (standalone, any time)
+   retro (standalone, any time)
+   explore (standalone, any time — feeds /think if exploration.md exists)
+   skillify (standalone, any time — author new skills)
+   ```
+   If the new skill is **standalone**, append a new line `<name> (standalone, any time — <one-line role>)` AFTER the LAST existing `standalone` entry (currently the `skillify` line). Use Edit with `old_string` containing the last standalone line verbatim and `new_string` containing that same line plus the new one. If phase-dependent, insert at the matching phase position in the arrow chain instead.
 5. Re-confirm `<name>` matches `^[a-z][a-z0-9-]{1,30}$` immediately before each Edit call.
+
+### Step 5b — Register in `CLAUDE.md`
+
+Edit `<repo-root>/CLAUDE.md`:
+1. **Read the file first** with the Read tool.
+2. Locate the `## Structure` fenced tree literally in the read output. Each existing line follows the format `├── <name>/SKILL.md          # <one-line description>` (or `└── ...` for the last entry).
+3. Add a line for the new skill matching the existing alignment: same column for the comment, same `├──` / `└──` glyph rules. The new line goes alphabetically among the SKILL.md entries, BEFORE the `├── _shared/` line.
+4. Use the Edit tool with `old_string` containing two adjacent existing lines from the tree (the line above the insertion point + the line below) and `new_string` placing the new line between them. Never compose tree text from the user-supplied name — it must come from the file's read output.
+5. Re-confirm `<name>` matches `^[a-z][a-z0-9-]{1,30}$` immediately before the Edit call.
 
 ### Step 6 — Report
 
@@ -140,6 +163,7 @@ Created /<name>:
   - <repo-root>/<name>/SKILL.md
   - registered in setup
   - registered in AGENTS.md
+  - registered in CLAUDE.md
 
 Next: run `./setup` from the repo root to symlink the new skill.
 Then `/<name>` will be available in Claude Code.

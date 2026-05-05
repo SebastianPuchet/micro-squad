@@ -234,6 +234,8 @@ When `careful: true`, every skill MUST:
 
 4. **Fix Agent constraint.** One fix per checkpoint commit, not bundled.
 
+5. **Checkpoint ownership.** Each phase skill (`/build`, `/verify`, `/ship`) owns its own phase-entry checkpoint. The `/squad` orchestrator NEVER duplicates them — it delegates to the sub-skill, which writes the single `squad-checkpoint: <phase>` commit at its init.
+
 Skills detect careful mode by reading state.md header at initialization. If absent, default behavior applies.
 
 ### Careful Mode — Worked Example

@@ -82,8 +82,6 @@ D) stop — save state, exit — effort: trivial
 
 **Dependency check:** think MUST be `done` or `skipped`. If not, tell user to run `/think` first.
 
-If `careful: true`, create checkpoint: `git commit --allow-empty -m "squad-checkpoint: plan"`
-
 Read agent-prompts.md. Replace `{sprint-id}`. Launch TWO agents in a single message:
 
 1. **Architect** (subagent_type: general-purpose) → writes `architecture.md`
@@ -127,7 +125,7 @@ Update state.md: plan → done.
 
 **Dependency check:** plan MUST be `done`. Verify plan.md, architecture.md, scout-report.md exist.
 
-If `careful: true`, create checkpoint: `git commit --allow-empty -m "squad-checkpoint: build"`
+Checkpoint ownership: `/build` owns the build-phase checkpoint commit. Squad does not create one here.
 
 Read agent-prompts.md. Replace `{sprint-id}` and `{test-command}` (from state.md). Launch Builder agent. If `careful: true`, append to the Builder prompt: "Careful mode: pre-commit a checkpoint before each major step. Stop and ask if any single change touches >5 files."
 
@@ -169,7 +167,7 @@ C) stop — effort: trivial
 
 **Dependency check:** build MUST be `done`.
 
-If `careful: true`, create checkpoint: `git commit --allow-empty -m "squad-checkpoint: verify"`
+Checkpoint ownership: `/verify` owns the verify-phase checkpoint commit. Squad does not create one here.
 
 Read agent-prompts.md (Review Lanes section + QA section). Replace `{sprint-id}`, `{base-branch}`, `{test-command}`.
 
@@ -235,7 +233,7 @@ C) stop — effort: trivial
 
 (Careful mode: option B is not offered.)
 
-If `careful: true`, create checkpoint: `git commit --allow-empty -m "squad-checkpoint: ship"`
+Checkpoint ownership: `/ship` owns the ship-phase checkpoint commit. Squad does not create one here.
 
 1. Collect evidence from artifacts: think.md, build-summary.md, verdict.md, qa-report.md, security.md
 2. For missing artifacts, use: "Phase not run" in the PR body

@@ -29,11 +29,20 @@ Launch ONE agent (subagent_type: general-purpose).
 
 ### Step 2 — Verify Output
 
-After agent returns, check `security.md` exists. If missing: **"Security agent failed. [retry / skip]"**
+After agent returns, check `security.md` exists. If missing, present a Decision Point:
+```
+Security agent failed to produce security.md.
+
+Recommendation: retry because the audit takes 2 minutes and skipping it leaves a real gap.
+
+A) retry — effort: ~2m Claude
+B) skip — proceed without audit (risk: unknown findings) — effort: trivial
+C) stop — effort: trivial
+```
 
 ### Step 3 — Present Results
 
-Read `security.md`. Present findings grouped by severity:
+Read `security.md`. Present findings grouped by severity using Decision Point Format:
 
 **If CRITICAL findings:**
 ```
@@ -41,16 +50,23 @@ CRITICAL security issues found:
 1. <finding + location + remediation>
 2. ...
 
-These MUST be fixed before shipping. Fix now? [yes / acknowledge risk and ship anyway / stop]
+Recommendation: fix now because shipping with CRITICAL findings is the most expensive way to learn this lesson.
+
+A) fix now — effort: ~Xh human / ~Ym Claude
+B) acknowledge risk and ship anyway — effort: trivial (HIGH RISK)
+C) stop — effort: trivial
 ```
 
 **If HIGH/MEDIUM/LOW only:**
 ```
-Security scan found N issues (X high, Y medium, Z low).
-Top findings: ...
+Security scan found N issues (X high, Y medium, Z low). Top findings: <list>.
 
-Recommendation: Fix <specific items> now, defer the rest.
-[fix recommended / fix all / defer all / stop]
+Recommendation: fix HIGH now, defer MEDIUM/LOW because the cost-benefit favors triage.
+
+A) fix recommended (HIGH only) — effort: ~Xh human / ~Ym Claude
+B) fix all — effort: ~Xh human / ~Ym Claude
+C) defer all — effort: trivial
+D) stop — effort: trivial
 ```
 
 **If clean:**

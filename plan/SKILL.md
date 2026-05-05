@@ -38,8 +38,16 @@ Launch both in a **single message** (two Agent tool calls):
 ### Step 2 — Verify Agent Output
 
 After both return:
-1. Check `architecture.md` exists and has content. If missing: **"Architect agent failed. [retry / stop]"**
-2. Check `scout-report.md` exists and has content. If missing: **"Scout agent failed. [retry / stop]"**
+1. Check `architecture.md` exists and has content. If missing, present a Decision Point:
+   ```
+   Architect agent failed to produce architecture.md.
+
+   Recommendation: retry because partial planning is worse than waiting 3 minutes.
+
+   A) retry — effort: ~3m Claude
+   B) stop — effort: trivial
+   ```
+2. Check `scout-report.md` exists and has content. If missing, same Decision Point pattern for the Scout.
 
 ### Step 3 — Synthesize
 
@@ -70,12 +78,18 @@ Read both artifacts. Write `.squad/<sprint-id>/plan.md` (~600 words max):
 
 ### Step 4 — User Confirmation
 
-Present the plan summary. If there are open questions, ask them now.
+Present the plan summary. If there are open questions, ask each via Decision Point Format.
 
-Ask: **"Plan ready. Proceed to build? [yes / adjust / stop]"**
-- **yes** → update state, suggest `/build`
-- **adjust** → ask what to change, re-run the relevant agent (architect or scout) with modified context
-- **stop** → save state, exit
+Decision Point:
+```
+Plan ready — <one-line summary>.
+
+Recommendation: proceed to /build because the plan is concrete and the effort estimate is reasonable.
+
+A) yes — proceed to /build — effort: as planned
+B) adjust — re-run architect or scout with modified context — effort: ~5m Claude
+C) stop — save state, exit — effort: trivial
+```
 
 Do NOT proceed without explicit confirmation.
 

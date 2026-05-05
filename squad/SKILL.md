@@ -43,7 +43,7 @@ The user's message after `/squad` is the **task description** (after stripping `
 ## THINK (sequential — needs user interaction)
 
 1. Read project context yourself: CLAUDE.md (if exists), ETHOS.md (if it exists in the project root or `_shared/`), last 10 git commits, directory structure. If CLAUDE.md or ETHOS.md is missing, note it and continue.
-2. Check for `.squad/<sprint-id>/exploration.md` (from `/explore`). If present, read it as additional input.
+2. Check for `.squad/<sprint-id>/exploration.md` (from `/explore`). If present, read it as additional input AND echo a 1-line message: `Reading exploration.md from prior /explore run.` so the user sees the handoff.
 3. Ask the user **3 forcing questions** (pick the most relevant to their task):
 
 | Question | Use when |

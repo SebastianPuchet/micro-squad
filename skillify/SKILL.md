@@ -28,7 +28,15 @@ The user's message after `/skillify` may be the desired skill name. If empty, as
 Ask in order. Validate each before continuing.
 
 1. **Name.** Lowercase, kebab-case, 1-2 words. Example: `freeze`, `pair-debug`.
-   Collision check: list `~/.claude/skills/*/SKILL.md` and the local skill directories. If the name already exists, abort:
+
+   **Validation (MANDATORY — run BEFORE any file write or Edit):** the supplied name MUST match the regex `^[a-z][a-z0-9-]{1,30}$` (starts with a lowercase letter; lowercase letters, digits, and hyphens only; total length 2-31 chars). Reject any name containing:
+   - shell metacharacters (`` ` ``, `$`, `;`, `|`, `&`, `(`, `)`, `<`, `>`, `*`, `?`, `[`, `]`, `{`, `}`, `\`, quotes, whitespace)
+   - slashes (`/`), dots (`.`), or path-traversal sequences (`..`)
+   - leading hyphens or digits
+
+   If validation fails, refuse to proceed and prompt for a new name. Do NOT pass the supplied name to any shell command, file path, or Edit insertion as-is until it passes the regex.
+
+   Collision check (only after validation passes): list `~/.claude/skills/*/SKILL.md` and the local skill directories. If the name already exists, abort:
    ```
    Skill `<name>` already exists at <path>. Pick a new name.
    ```
@@ -110,13 +118,20 @@ If the user picked a dependency in Step 1, fill the Dependency Check section acc
 
 ### Step 4 — Register in `setup`
 
-Edit `<repo-root>/setup`. Find the `SKILLS=(...)` line. Append `<name>` to the array, preserving alphabetical-or-existing order. Use the Edit tool, not sed.
+Edit `<repo-root>/setup`:
+1. **Read the file first** with the Read tool — never edit blindly.
+2. Locate the `SKILLS=(...)` array literally in the read output. Identify the exact insertion point (the entry it should follow alphabetically, or the last entry if appending).
+3. Use the Edit tool with `old_string` set to the literal surrounding text from the file (the entry before + closing context) and `new_string` adding the validated `<name>` token. Never use sed, never use shell-interpolated paths, and never construct the Edit `old_string` from the user-supplied name itself — it must come from the file's actual contents.
+4. Re-confirm `<name>` matches `^[a-z][a-z0-9-]{1,30}$` immediately before the Edit call. If not, abort.
 
 ### Step 5 — Register in `AGENTS.md`
 
 Edit `<repo-root>/AGENTS.md`:
-1. Add a row to the command table: `| \`/<name>\` | <description> |`
-2. If standalone, add to the dep graph under the standalone line. If phase-dependent, add to the appropriate phase position.
+1. **Read the file first** with the Read tool.
+2. Find the command table literally in the read output. Identify the exact row above which the new row will be inserted.
+3. Use the Edit tool with `old_string` set to a literal multi-line snippet from the file (e.g., the row above + the row below) and insert `| \`/<name>\` | <description> |` between them. Never construct paths or table cells via shell interpolation.
+4. If standalone, add to the dep graph under the standalone line. If phase-dependent, add to the appropriate phase position. Same Edit-tool, literal-snippet rule applies.
+5. Re-confirm `<name>` matches `^[a-z][a-z0-9-]{1,30}$` immediately before each Edit call.
 
 ### Step 6 — Report
 

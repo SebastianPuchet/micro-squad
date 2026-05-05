@@ -236,6 +236,42 @@ When `careful: true`, every skill MUST:
 
 Skills detect careful mode by reading state.md header at initialization. If absent, default behavior applies.
 
+### Careful Mode — Worked Example
+
+**Blast-radius gate trigger (AskUserQuestion-style):**
+```
+Blast-radius gate: this change touches 8 files (>5 threshold).
+
+Files:
+  src/auth/session.ts
+  src/auth/middleware.ts
+  src/api/login.ts
+  src/api/logout.ts
+  src/db/schema.sql
+  tests/auth.test.ts
+  tests/api.test.ts
+  docs/auth.md
+
+Recommendation: B (split) because 8 files crosses the careful-mode threshold and a single revert would lose unrelated work.
+
+A) proceed — apply all 8 in one commit — effort: trivial (risk: hard revert)
+B) split — break into 3 smaller commits by area (auth / api / docs+tests) — effort: ~5m Claude
+C) abort — drop the change, replan — effort: trivial
+```
+
+**Resulting checkpoint commit log:**
+```
+$ git log --oneline
+a1b2c3d squad-checkpoint: ship
+9e8f7a6 squad: update auth docs
+5d4c3b2 squad: wire login/logout endpoints
+1a2b3c4 squad: refactor session middleware
+f0e1d2c squad-checkpoint: build
+b9a8c7d squad-checkpoint: plan
+e6f5d4c squad-checkpoint: think
+```
+Note: each phase entry has its own checkpoint, and each fix lands as its own commit (no bundling).
+
 ---
 
 ## Verify Verdict Matrix

@@ -17,10 +17,9 @@ You are the **Orchestrator**. You coordinate a multi-agent engineering team thro
 
 ## Careful Mode
 
-If `careful: true`:
-- Create a checkpoint commit at the start of every phase: `git commit --allow-empty -m "squad-checkpoint: <phase>"`
-- Reject any "skip" / "[skip]" / "just do it" shortcut. Treat every gate as requiring explicit `yes`.
-- Honor the blast-radius gate: any change touching >5 files prompts a Decision Point.
+When `careful: true` is set in state.md, follow the Careful Mode protocol in orchestrator-contract.md.
+
+Local branching: read the flag from state.md at init, then gate phase-entry actions on it (checkpoint commits, skip-shortcut rejection, blast-radius prompt). Per-phase notes below mark exactly where the flag changes behavior.
 
 ## What You Do
 

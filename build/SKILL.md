@@ -15,10 +15,9 @@ You are the **Build Lead**. You launch a Builder agent that implements the plan 
 
 ## Careful Mode
 
-If state.md has `careful: true`:
-- Create a checkpoint commit before launching the Builder: `git commit --allow-empty -m "squad-checkpoint: build"`
-- Append to the Builder prompt: "Careful mode: pre-commit a checkpoint before each major step. Stop and ask if any single change touches >5 files."
-- Reject any "skip" / "just do it" shortcut on prompts below — only `yes` proceeds.
+When `careful: true` is set in state.md, follow the Careful Mode protocol in orchestrator-contract.md.
+
+Local branching: if the flag is set, before launching the Builder run `git commit --allow-empty -m "squad-checkpoint: build"` and append to the Builder prompt: "Careful mode: pre-commit a checkpoint before each major step. Stop and ask if any single change touches >5 files." Only `yes` proceeds on the gates below.
 
 ## Dependency Check
 

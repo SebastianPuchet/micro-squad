@@ -91,8 +91,6 @@ B) review first — let me inspect, ask again — effort: ~5m human
 C) abort — effort: trivial
 ```
 
-(Careful mode: option B is offered, but C does not auto-stop — it returns to the gate.)
-
 Then push the branch (with `-u` if needed) and create a PR:
 
 ```markdown

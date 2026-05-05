@@ -13,7 +13,10 @@ This skill is **standalone** — no phase dependencies. It may run inside an act
 ## Initialization
 
 1. Read `orchestrator-contract.md` from `~/.claude/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
-2. Detect active sprint: search for `.squad/*/state.md`. If exactly one exists with at least one `pending` phase, treat it as active. Otherwise, no active sprint.
+2. Detect active sprint per the Sprint Initialization Protocol in the contract: search `.squad/*/state.md`. An "active sprint" is one whose state table has at least one phase in `pending` or `running` state — not merely one whose state.md exists.
+   - If exactly ONE active sprint is found → treat it as active (write `exploration.md` there).
+   - If MULTIPLE active sprints are found → present a Decision Point listing them; user picks which to write to, or chooses stdout.
+   - If NONE are active (all sprints have only `done` / `skipped` / `blocked` phases, or no `.squad/*/state.md` exists) → print to stdout. Do NOT create `.squad/`.
 
 This skill does NOT mutate state.md.
 

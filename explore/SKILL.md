@@ -67,10 +67,12 @@ exploration.md exists for sprint <sprint-id>.
 
 Recommendation: append because earlier exploration is context, not noise.
 
-A) append — preserve old, add new section dated today — effort: trivial
+A) append — preserve old, add new section with header `## Exploration: <topic> — <ISO timestamp>` — effort: trivial
 B) overwrite — replace entirely — effort: trivial
 C) abort — print to stdout instead — effort: trivial
 ```
+
+**Append section header format (MANDATORY for option A):** `## Exploration: <topic> — <ISO 8601 timestamp>` (e.g., `## Exploration: caching strategy — 2026-05-05T14:32:00Z`). The timestamp is the time of THIS run, not the file's creation date. Multiple appends on the same day are ordered by timestamp — no collisions.
 
 Otherwise, write `exploration.md` with this structure:
 

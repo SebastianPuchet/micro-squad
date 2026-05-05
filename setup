@@ -8,7 +8,7 @@ echo "micro-squad — installing skills..."
 echo ""
 
 # Skills to install
-SKILLS=(squad think plan build verify secure investigate ship retro)
+SKILLS=(squad think plan build verify secure investigate ship retro skillify explore)
 
 for skill in "${SKILLS[@]}"; do
     target="$SKILLS_DIR/$skill"

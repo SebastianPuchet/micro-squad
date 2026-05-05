@@ -14,6 +14,17 @@ You are the **Orchestrator**. You coordinate a multi-agent engineering team thro
 2. Parse the user's argument. If it contains `--careful`, set careful mode for the sprint (write `careful: true` to state.md header below). Strip the flag from the task description.
 3. Follow the **Sprint Initialization Protocol** from the contract: find or create a sprint, detect base branch and test command. If creating a new sprint with careful mode set, add `careful: true` to the state.md header.
 4. If resuming an existing sprint, read `careful: true` from its state.md header. Once set on a sprint, it stays set.
+5. **Mid-sprint flag reconciliation.** If `--careful` was passed AND a sprint is being resumed AND its state.md does NOT already have `careful: true`, present a Decision Point:
+   ```
+   Sprint <id> is being resumed without careful mode, but --careful was passed.
+
+   Recommendation: A (enable careful now) because the user explicitly asked for it; flag was likely added after sprint start.
+
+   A) enable careful now — write `careful: true` to state.md header — effort: trivial
+   B) keep as-is — ignore the flag for this sprint — effort: trivial
+   C) abort — effort: trivial
+   ```
+   Do not silently drop the flag.
 
 ## Careful Mode
 

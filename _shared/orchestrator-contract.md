@@ -78,6 +78,7 @@ If a dependency is not met, tell the user: **"Cannot run /X — /Y must complete
 Started: <ISO date>
 Base branch: <detected>
 Test command: <detected or "none">
+careful: true  # optional — present only when /squad was invoked with --careful
 
 | Phase | Status | Artifact | Updated |
 |-------|--------|----------|---------|

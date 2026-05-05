@@ -1,7 +1,7 @@
 ---
 name: build
 description: "Implementation agent with atomic commits, auto-revert, and 3-strike escalation"
-allowed-tools: Agent, Read, Write, Glob, Grep, AskUserQuestion
+allowed-tools: Agent, Read, Write, Glob, Grep, Bash, AskUserQuestion
 ---
 
 # /build — Build with Guardrails
@@ -11,7 +11,14 @@ You are the **Build Lead**. You launch a Builder agent that implements the plan 
 ## Initialization
 
 1. Read `orchestrator-contract.md` and `agent-prompts.md` from `~/.claude/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
-2. Follow the Sprint Initialization Protocol: find active sprint.
+2. Follow the Sprint Initialization Protocol: find active sprint. Read state.md for `careful` flag.
+
+## Careful Mode
+
+If state.md has `careful: true`:
+- Create a checkpoint commit before launching the Builder: `git commit --allow-empty -m "squad-checkpoint: build"`
+- Append to the Builder prompt: "Careful mode: pre-commit a checkpoint before each major step. Stop and ask if any single change touches >5 files."
+- Reject any "skip" / "just do it" shortcut on prompts below — only `yes` proceeds.
 
 ## Dependency Check
 
@@ -33,7 +40,7 @@ If any missing: **"Cannot build — missing <file>. Run `/plan` to generate it."
 
 Read `agent-prompts.md`. Replace `{sprint-id}` and `{test-command}` (from state.md — use "none detected" if not set).
 
-Launch ONE agent (subagent_type: general-purpose) with the Builder template.
+Launch ONE agent (subagent_type: general-purpose) with the Builder template. If careful mode, append the careful-mode instruction noted above.
 
 ### Step 2 — Verify Output
 
@@ -47,21 +54,54 @@ After builder returns:
 
 **If STATUS: partial**
 - Show what was completed and what wasn't
-- Ask: **"Builder partially completed. [continue building / accept partial / stop]"**
-- If continue: re-launch builder with context about what's already done
+- Decision Point:
+  ```
+  Builder partially completed: <summary>.
+
+  Recommendation: continue building because the remaining steps are bounded.
+
+  A) continue building with context of what's done — effort: ~Ym Claude
+  B) accept partial — proceed to /verify with what we have — effort: trivial
+  C) stop — effort: trivial
+  ```
 
 **If STATUS: blocked**
 - Show the blocker details
-- Ask: **"Builder hit a blocker: <description>. Options:"**
-  - **A)** Retry with different approach
-  - **B)** Adjust the plan (re-run `/plan`)
-  - **C)** Stop and investigate (run `/investigate`)
+- Decision Point:
+  ```
+  Builder hit a blocker: <description>.
+
+  Recommendation: <pick one based on the blocker>.
+
+  A) retry with different approach — effort: ~Ym Claude
+  B) adjust the plan (re-run /plan) — effort: ~10m Claude
+  C) stop and /investigate — effort: ~15m Claude
+  ```
 
 **If build-summary.md is missing:**
-- Report: **"Builder agent failed to produce output. [retry / stop]"**
+Decision Point:
+```
+Builder produced no output — likely an agent failure.
+
+Recommendation: retry once because transient failures are common.
+
+A) retry — effort: ~Ym Claude
+B) stop — effort: trivial
+```
 
 Update state.md: build → done (or blocked).
 
-Ask: **"Build done. Run judgment day? [yes / skip to ship / stop]"**
+Decision Point:
+```
+Build done. Run /verify next?
+
+Recommendation: yes because review catches issues cheaper than post-merge.
+
+A) yes — run /verify — effort: ~15m Claude
+B) skip to /ship — effort: trivial (risk: unreviewed)
+C) stop — effort: trivial
+```
+
+(Careful mode: option B is not offered.)
 
 Next: `/verify`

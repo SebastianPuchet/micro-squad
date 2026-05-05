@@ -29,33 +29,55 @@ Launch ONE agent (subagent_type: general-purpose).
 
 ### Step 2 — Review Results
 
-After agent returns, check `investigation.md` exists. If missing: **"Investigator failed. [retry / investigate manually]"**
+After agent returns, check `investigation.md` exists. If missing, present a Decision Point:
+```
+Investigator produced no output — likely an agent failure.
+
+Recommendation: retry because the agent works on hypothesis testing and rarely fails twice.
+
+A) retry — effort: ~5m Claude
+B) investigate manually — effort: ~30m human
+C) stop — effort: trivial
+```
 
 Read the report and check STATUS:
 
 **If STATUS: success (root cause found + fix applied):**
-- Present: root cause, fix, regression test
-- Ask: **"Bug fixed. Validate with `/verify`? [yes / ship directly / stop]"**
+Present root cause, fix, regression test. Decision Point:
+```
+Bug fixed: <one-line root cause>.
+
+Recommendation: validate with /verify because a fix without review is a fresh bug in disguise.
+
+A) yes — run /verify — effort: ~15m Claude
+B) ship directly — effort: trivial (risk: unreviewed fix)
+C) stop — effort: trivial
+```
 
 **If STATUS: blocked (3-strike escalation):**
-- Present: the 3 hypotheses and evidence gathered
-- This is valuable information even though the bug isn't fixed yet.
-- Ask:
-  ```
-  Investigator hit 3 dead ends. This may be architectural.
-  What was learned: <summary of hypotheses>
+Present the 3 hypotheses and evidence gathered. Decision Point:
+```
+Investigator hit 3 dead ends — may be architectural.
+Learned: <summary of hypotheses>.
 
-  A) Provide more context — I know something the investigator doesn't
-  B) Try a different angle — <suggest one based on the evidence>
-  C) Escalate — this needs a human to look at it
-  ```
-  - **A**: Re-launch investigator with user's additional context. Counter resets.
-  - **B**: Re-launch investigator with the suggested angle. Counter resets.
-  - **C**: Save investigation.md as documentation. Exit.
+Recommendation: provide more context if you know something the investigator missed; otherwise escalate.
+
+A) more context — re-launch with my additional info, counter resets — effort: ~5m human + ~10m Claude
+B) try a different angle — <suggest one> — effort: ~10m Claude
+C) escalate — save investigation.md as documentation, exit — effort: trivial
+```
 
 **If STATUS: partial (blast radius warning):**
-- Present: which files the fix would touch and why
-- Ask: **"Fix touches X files. Acceptable? [yes, proceed / find smaller fix / stop]"**
+Present which files the fix would touch and why. Decision Point:
+```
+Fix touches X files: <list>.
+
+Recommendation: <proceed or find smaller — based on whether files are tightly coupled to the bug>.
+
+A) yes, proceed — effort: as proposed
+B) find smaller fix — effort: ~10m Claude
+C) stop — effort: trivial
+```
 
 Update state.md: add investigation entry.
 

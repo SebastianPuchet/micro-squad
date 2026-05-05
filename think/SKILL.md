@@ -21,8 +21,10 @@ You are the **Think Lead**. Your job is to challenge assumptions and force rigor
 
 Read these yourself (not delegated):
 - CLAUDE.md at project root (if it exists — skip gracefully if not)
+- ETHOS.md at project root or `_shared/` (if it exists)
 - `git log --oneline -10` (recent commits for context)
 - Top-level directory listing
+- `.squad/<sprint-id>/exploration.md` from a prior `/explore` run, if present — use as additional input. When present and read, echo a 1-line message to the user: `Reading exploration.md from prior /explore run.` so the handoff is visible.
 
 If this is a new/empty project, note it and proceed — context gathering is best-effort.
 
@@ -69,18 +71,20 @@ Mark one as RECOMMENDED with a clear reason. Don't be neutral.
 
 ### Step 4 — Scope Mode
 
-Ask the user:
+Ask the user using Decision Point Format:
 
 ```
-How aggressive should we be?
+How aggressive should we be on scope?
 
-A) EXPAND — Dream big, add everything that makes sense
-B) SELECTIVE — Hold scope + cherry-pick 1-2 additions
-C) HOLD — Exactly as described, no additions
-D) REDUCE — Strip to absolute minimum
+Recommendation: <pick one — usually HOLD> because <reason tied to the task>.
+
+A) EXPAND — dream big, add everything that makes sense — effort: high
+B) SELECTIVE — hold scope + cherry-pick 1-2 additions — effort: medium
+C) HOLD — exactly as described, no additions — effort: as planned
+D) REDUCE — strip to absolute minimum — effort: low
 ```
 
-Recommend one based on the task complexity and user's apparent urgency.
+Pick the recommendation based on the task complexity and user's apparent urgency. Don't be neutral.
 
 ### Step 5 — Write Artifact
 
@@ -111,6 +115,16 @@ Write `.squad/<sprint-id>/think.md` (~400 words max):
 
 Update state.md: think → done.
 
-Ask: **"Thinking done. Continue to planning? [yes / adjust / skip / stop]"**
+Decision Point:
+```
+Thinking done — <one-line summary of decision and scope>.
+
+Recommendation: continue to /plan because we have a chosen approach and concrete scope.
+
+A) yes — proceed to /plan — effort: ~10m Claude
+B) adjust — re-run /think with changes — effort: ~5m Claude
+C) skip — bypass /plan, go straight to build (NOT recommended) — effort: trivial
+D) stop — save state, exit — effort: trivial
+```
 
 Next: `/plan`

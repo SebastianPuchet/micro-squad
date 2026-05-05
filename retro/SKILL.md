@@ -87,10 +87,15 @@ Budget: ~400 words max.
 
 ### Step 5 — User Input
 
-Ask: **"Anything to add? [notes / done]"**
+Decision Point:
+```
+Retro draft ready — <one-line summary>.
 
-- **notes** → ask for their input, append to retro artifact under `## Team Notes`
-- **done** → finish
+Recommendation: add notes if any human-side context is missing because git stats don't capture morale or interruptions.
+
+A) add notes — append under `## Team Notes` — effort: ~5m human
+B) done — finalize as-is — effort: trivial
+```
 
 ### Step 6 — Report
 

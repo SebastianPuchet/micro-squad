@@ -14,11 +14,13 @@ micro-squad/
 ├── think/SKILL.md          # Forcing questions + scope
 ├── plan/SKILL.md           # Parallel architect + scout
 ├── build/SKILL.md          # Builder with guardrails
-├── verify/SKILL.md         # Dual blind judges + QA
+├── verify/SKILL.md         # Eng + DevEx + Design lanes + QA
 ├── secure/SKILL.md         # Security audit
 ├── investigate/SKILL.md    # Root cause debugging
+├── explore/SKILL.md        # Standalone reconnaissance
 ├── ship/SKILL.md           # PR with evidence trail
 ├── retro/SKILL.md          # Sprint retrospective
+├── skillify/SKILL.md       # Scaffold a new skill
 ├── _shared/
 │   ├── orchestrator-contract.md  # Rules all skills follow
 │   └── agent-prompts.md         # Sub-agent prompt templates
@@ -36,6 +38,8 @@ micro-squad/
 - **Voice.** Direct, concrete, builder-oriented. Name the file, the function, the line. No hedging.
 
 ## Adding a New Skill
+
+Recommended path: run `/skillify` — it scaffolds the SKILL.md and registers the skill in `setup`, `AGENTS.md`, and this file's Structure tree automatically. Manual steps below are the fallback.
 
 1. Create `<skill-name>/SKILL.md` with frontmatter matching existing skills.
 2. Follow the pattern: Initialization (read contract) > Dependency Check > Process (numbered steps).

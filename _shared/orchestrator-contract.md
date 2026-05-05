@@ -112,7 +112,9 @@ Keep artifacts concise. Bloated artifacts waste tokens for downstream phases.
 | plan.md | ~600 words | Merged architecture + scout + steps |
 | build-log.md | 1 row per commit | Table only |
 | build-summary.md | ~300 words | Stats + blockers + deviations |
-| review-eng.md / review-devex.md / review-design.md | ~500 words each | Findings list (per lane) |
+| review-eng.md | ~500 words | Findings list (Engineering lane) |
+| review-devex.md | ~500 words | Findings list (DevEx lane) |
+| review-design.md | ~500 words | Findings list (Design lane) |
 | qa-report.md | ~400 words | Test table + summary |
 | verdict.md | ~400 words | Consensus table + status |
 | security.md | ~600 words | Findings table + summary |

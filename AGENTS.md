@@ -29,7 +29,7 @@ The flag is recorded as `careful: true` in the sprint's `state.md` header. All s
 
 | File | Purpose |
 |------|---------|
-| `_shared/orchestrator-contract.md` | Sprint init, state machine, artifact contract, delegation rules, Decision Point Format, Careful Mode protocol, Verify Verdict Matrix |
+| `_shared/orchestrator-contract.md` | Sprint state machine, contract rules, gate formats |
 | `_shared/agent-prompts.md` | Prompt templates for all sub-agents (architect, scout, builder, review lanes, QA, fix, security, investigator) |
 
 ## Phase Dependencies

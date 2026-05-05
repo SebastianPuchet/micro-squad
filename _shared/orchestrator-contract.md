@@ -201,6 +201,18 @@ Rules:
 - Effort estimates use the dual scale: `~Xh human / ~Ym Claude`. If irrelevant (e.g., a yes/no with negligible cost), write `effort: trivial`.
 - 2 options are acceptable when only two paths exist. Otherwise prefer 3.
 - Bare prompts like "Continue? [yes/no]" are NOT acceptable inside a phase. Always supply context + recommendation.
+- Use 2-4 options. The recommendation always names a specific letter/option, never just "A is best".
+
+**Worked example:**
+```
+Build complete — 4 commits, 7 files changed, all tests green.
+
+Recommendation: A (continue to /verify) because review catches issues cheaper than post-merge.
+
+A) yes — run /verify — effort: ~15m Claude
+B) inspect — review with git log/diff first — effort: ~10m human
+C) skip to /ship — effort: trivial (risk: unreviewed)
+```
 
 ---
 

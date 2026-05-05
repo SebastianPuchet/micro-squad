@@ -110,7 +110,7 @@ Keep artifacts concise. Bloated artifacts waste tokens for downstream phases.
 | plan.md | ~600 words | Merged architecture + scout + steps |
 | build-log.md | 1 row per commit | Table only |
 | build-summary.md | ~300 words | Stats + blockers + deviations |
-| review-a.md / review-b.md | ~500 words each | Findings list |
+| review-eng.md / review-devex.md / review-design.md | ~500 words each | Findings list (per lane) |
 | qa-report.md | ~400 words | Test table + summary |
 | verdict.md | ~400 words | Consensus table + status |
 | security.md | ~600 words | Findings table + summary |
@@ -180,8 +180,8 @@ Continue to <next phase>? [yes / adjust / skip / stop]
 - **skip** → mark next phase as `skipped`, move to the one after
 - **stop** → save state, exit. User can resume later with `/squad` or individual phase commands
 
-### Decision Points (AskUserQuestion Format)
-When presenting choices within a phase, use this structure:
+### Decision Point Format (MANDATORY for all gates)
+Every choice presented to the user — between phases, within phases, on retry/skip/abort prompts, on uncommitted changes, branch checks, push confirmation, scope selection — MUST use this structure:
 
 ```
 <1-sentence context: where we are and what needs deciding>
@@ -193,7 +193,50 @@ B) <option> — effort: ~Xh human / ~Ym Claude
 C) <option> — effort: ~Xh human / ~Ym Claude
 ```
 
-Take a position. Recommend the best option. Don't be neutral.
+Rules:
+- The 1-line context is required. Do not skip it.
+- The Recommendation line is required. Take a position. Don't be neutral.
+- Effort estimates use the dual scale: `~Xh human / ~Ym Claude`. If irrelevant (e.g., a yes/no with negligible cost), write `effort: trivial`.
+- 2 options are acceptable when only two paths exist. Otherwise prefer 3.
+- Bare prompts like "Continue? [yes/no]" are NOT acceptable inside a phase. Always supply context + recommendation.
+
+---
+
+## Careful Mode Protocol
+
+State.md may include `careful: true` in its header. Set by `/squad --careful` at sprint start, or written manually before resuming.
+
+When `careful: true`, every skill MUST:
+
+1. **Pre-step checkpoint commits.** Before each major step (phase entry, agent launch, fix application), create a checkpoint commit:
+   ```bash
+   git commit --allow-empty -m "squad-checkpoint: <phase>"
+   ```
+   Use `--allow-empty` so checkpoints land even when nothing has changed yet.
+
+2. **Blast-radius gate.** Any single change touching >5 files MUST stop and present a Decision Point: proceed / split into smaller commits / abort. No automatic continuation.
+
+3. **No skip shortcuts.** Ignore any "[skip]" / `--skip` / "just do it" shortcut. Every gate requires an explicit `yes`. Treat any non-`yes` answer as stop.
+
+4. **Fix Agent constraint.** One fix per checkpoint commit, not bundled.
+
+Skills detect careful mode by reading state.md header at initialization. If absent, default behavior applies.
+
+---
+
+## Verify Verdict Matrix
+
+`/verify` runs three review lanes (Engineering, DevEx, Design) plus QA — 4 agents in parallel. Synthesis builds a consensus table with columns: Eng | DevEx | Design | QA | Verdict.
+
+**Verdict rules:**
+- **FIX** — Found by 2+ lanes (any combination of YES/FAIL across Eng, DevEx, Design, QA).
+- **FIX** — ANY single CRITICAL finding from any lane. CRITICAL is never dismissed.
+- **TRIAGE** — Found by exactly 1 lane, severity WARNING or SUGGESTION. Present to user.
+- **DISMISS** — SUGGESTION explicitly contradicted by another lane.
+
+**Minimum to synthesize:** 3 of 4 reports. If two or more lanes fail to write, abort synthesis and report agent failures.
+
+**Design lane fallback:** When a diff has no UI/UX surface, the Design lane reviews API shape, output structure, error message clarity, and doc structure. Design NEVER returns CLEAN by default; it must explicitly note "no UI surface in diff" if it makes that call.
 
 ---
 

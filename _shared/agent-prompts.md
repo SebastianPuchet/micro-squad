@@ -216,8 +216,6 @@ REVIEW FOR:
 
 Use the shared output schema and severity scale.
 
-If no issues found: "VERDICT: CLEAN — No issues found."
-
 Budget: ~500 words max.
 
 STATUS: success
@@ -243,8 +241,6 @@ REVIEW FOR:
 - API/CLI shape: argument order, flag naming, return types, consistency with rest of codebase
 
 Use the shared output schema and severity scale.
-
-If no issues found: "VERDICT: CLEAN — No issues found."
 
 Budget: ~500 words max. Focus on the developer/user touching this code.
 
@@ -336,6 +332,14 @@ RULES:
 - One commit per fix. Message: "squad-fix: <what was fixed>"
 - After each fix, run: {test-command}
 - If a fix introduces a NEW test failure: revert it immediately.
+
+CAREFUL MODE (when instructed by the orchestrator):
+If the launch prompt says "Careful mode: one fix per checkpoint commit, not bundled," then for each fix:
+1. Apply the single fix.
+2. Run {test-command}.
+3. Commit with message format: "squad-fix-checkpoint: <fix-description>" (note the "-checkpoint" infix — distinguishes careful-mode commits from regular squad-fix commits in the log).
+4. NEVER bundle two fixes into one commit. Even if they touch the same file or look related — one fix, one commit.
+5. If a fix needs supporting changes (e.g., a new helper), keep them in the same commit only if they are part of that fix's minimal diff. Otherwise split.
 
 CONFIRMED ISSUES TO FIX:
 {issues}

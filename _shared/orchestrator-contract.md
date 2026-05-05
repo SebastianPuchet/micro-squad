@@ -216,6 +216,26 @@ C) skip to /ship — effort: trivial (risk: unreviewed)
 
 ---
 
+## Flag Parsing
+
+Skills that accept flags MUST follow this convention:
+
+- **Boolean flag:** `--<name>` — present means `true`, absent means `false`. Example: `--careful`.
+- **Assignment flag:** `--<name>=<value>` — value is everything after the first `=`. Example: `--scope=hold`.
+- **Stripping rule:** strip ALL recognized flags from the user's message BEFORE treating the remainder as the task description. Whitespace collapses; quoting is preserved as-is.
+- **Unknown flags:** if a token starts with `--` but is not recognized, do NOT pass it through as part of the task description. Surface it to the user via Decision Point: ignore / treat as task text / abort.
+- **Position-independent:** flags may appear anywhere in the argument string. Order does not matter.
+
+**Recognized flags (current):**
+
+| Flag | Type | Owner | Effect |
+|------|------|-------|--------|
+| `--careful` | boolean | `/squad` | Sets `careful: true` in state.md; enables Careful Mode Protocol |
+
+Adding a new flag: append a row above and document parsing in the owner skill's Initialization section.
+
+---
+
 ## Careful Mode Protocol
 
 State.md may include `careful: true` in its header. Set by `/squad --careful` at sprint start, or written manually before resuming.

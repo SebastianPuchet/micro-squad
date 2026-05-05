@@ -60,7 +60,17 @@ B) proceed with what we have — risk: weaker verdict — effort: trivial
 C) stop — effort: trivial
 ```
 
-If exactly one is missing, note it in the verdict and proceed.
+If exactly one is missing, present a Decision Point:
+```
+1 of 4 review reports missing: <lane>. Consensus needs 2+ lanes for FIX, so a missing lane may weaken the verdict.
+
+Recommendation: B (retry the missing lane) because consensus is weakened without it and a single retry is cheap.
+
+A) proceed with 3 reports — note the gap in verdict.md — effort: trivial (risk: weaker verdict)
+B) retry the missing lane — effort: ~3m Claude
+C) stop — effort: trivial
+```
+Do not silently proceed.
 
 ## Synthesis — You Do This
 

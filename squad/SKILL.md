@@ -10,11 +10,12 @@ You are the **Orchestrator**. You coordinate a multi-agent engineering team thro
 
 ## Initialization
 
-1. Read `orchestrator-contract.md` and `agent-prompts.md` from `~/.claude/skills/micro-squad-shared/`. If not found, search for a `_shared/` directory near this skill file. If neither exists, tell the user to run the setup script.
-2. Parse the user's argument. If it contains `--careful`, set careful mode for the sprint (write `careful: true` to state.md header below). Strip the flag from the task description.
-3. Follow the **Sprint Initialization Protocol** from the contract: find or create a sprint, detect base branch and test command. If creating a new sprint with careful mode set, add `careful: true` to the state.md header.
-4. If resuming an existing sprint, read `careful: true` from its state.md header. Once set on a sprint, it stays set.
-5. **Mid-sprint flag reconciliation.** If `--careful` was passed AND a sprint is being resumed AND its state.md does NOT already have `careful: true`, present a Decision Point:
+1. Read `orchestrator-contract.md` and `agent-prompts.md` from `~/.agents/skills/micro-squad-shared/`. If not found, search for a `_shared/` directory near this skill file. If neither exists, tell the user to run the setup script.
+2. Compute `$SQUAD_ROOT` per orchestrator-contract.md §Squad Dir Resolution before reading/writing artifacts. Cache resolved `squad_dir` and `repo_id` in state.md on new-sprint creation.
+3. Parse the user's argument. If it contains `--careful`, set careful mode for the sprint (write `careful: true` to state.md header below). Strip the flag from the task description.
+4. Follow the **Sprint Initialization Protocol** from the contract: find or create a sprint, detect base branch and test command. If creating a new sprint with careful mode set, add `careful: true` to the state.md header.
+5. If resuming an existing sprint, read `careful: true` from its state.md header. Once set on a sprint, it stays set.
+6. **Mid-sprint flag reconciliation.** If `--careful` was passed AND a sprint is being resumed AND its state.md does NOT already have `careful: true`, present a Decision Point:
    ```
    Sprint <id> is being resumed without careful mode, but --careful was passed.
 
@@ -43,7 +44,7 @@ The user's message after `/squad` is the **task description** (after stripping `
 ## THINK (sequential — needs user interaction)
 
 1. Read project context yourself: CLAUDE.md (if exists), ETHOS.md (if it exists in the project root or `_shared/`), last 10 git commits, directory structure. If CLAUDE.md or ETHOS.md is missing, note it and continue.
-2. Check for `.squad/<sprint-id>/exploration.md` (from `/explore`). If present, read it as additional input AND echo a 1-line message: `Reading exploration.md from prior /explore run.` so the user sees the handoff.
+2. Check for `{squad-dir}/exploration.md` (from `/explore`). If present, read it as additional input AND echo a 1-line message: `Reading exploration.md from prior /explore run.` so the user sees the handoff.
 3. Ask the user **3 forcing questions** (pick the most relevant to their task):
 
 | Question | Use when |
@@ -71,7 +72,7 @@ C) HOLD — exactly as described — effort: as planned
 D) REDUCE — strip to absolute minimum — effort: low
 ```
 
-6. Write `.squad/<sprint-id>/think.md` (~400 words max). Update state.md: think → done.
+6. Write `{squad-dir}/think.md` (~400 words max). Update state.md: think → done.
 
 Ask via Decision Point Format:
 ```
@@ -93,7 +94,7 @@ D) stop — save state, exit — effort: trivial
 
 **Dependency check:** think MUST be `done` or `skipped`. If not, tell user to run `/think` first.
 
-Read agent-prompts.md. Replace `{sprint-id}`. Launch TWO agents in a single message:
+Read agent-prompts.md. Replace `{squad-dir}` (absolute path) and `{sprint-id}`. Launch TWO agents in a single message:
 
 1. **Architect** (subagent_type: general-purpose) → writes `architecture.md`
 2. **Scout** (subagent_type: Explore) → writes `scout-report.md`
@@ -109,7 +110,7 @@ B) proceed without it — effort: trivial (risk: incomplete plan)
 C) stop — effort: trivial
 ```
 
-Synthesize into `.squad/<sprint-id>/plan.md` (~600 words max):
+Synthesize into `{squad-dir}/plan.md` (~600 words max):
 - Merge architecture with scout findings
 - Surface conflicts: "Architect proposed X, but scout found Y already exists"
 - Add effort estimate: `Human: ~Xh | Claude: ~Ym`
@@ -138,7 +139,7 @@ Update state.md: plan → done.
 
 Checkpoint ownership: `/build` owns the build-phase checkpoint commit. Squad does not create one here.
 
-Read agent-prompts.md. Replace `{sprint-id}` and `{test-command}` (from state.md). Launch Builder agent. If `careful: true`, append to the Builder prompt: "Careful mode: pre-commit a checkpoint before each major step. Stop and ask if any single change touches >5 files."
+Read agent-prompts.md. Replace `{squad-dir}` (absolute path), `{sprint-id}`, and `{test-command}` (from state.md). Launch Builder agent. If `careful: true`, append to the Builder prompt: "Careful mode: pre-commit a checkpoint before each major step. Stop and ask if any single change touches >5 files."
 
 After builder returns, read `build-summary.md`:
 - If **STATUS: blocked** → present Decision Point with blockers
@@ -180,14 +181,14 @@ C) stop — effort: trivial
 
 Checkpoint ownership: `/verify` owns the verify-phase checkpoint commit. Squad does not create one here.
 
-Read agent-prompts.md (Review Lanes section + QA section). Replace `{sprint-id}`, `{base-branch}`, `{test-command}`.
+Read agent-prompts.md (Review Lanes section + QA section). Replace `{squad-dir}` (absolute path), `{sprint-id}`, `{base-branch}`, `{test-command}`.
 
 ### Round 1 — Launch FOUR agents in parallel (single message):
 
-1. **Eng-Review** (general-purpose) — Lane: Engineering template + `Write to: .squad/<sprint-id>/review-eng.md`
-2. **DevEx-Review** (general-purpose) — Lane: DevEx template + `Write to: .squad/<sprint-id>/review-devex.md`
-3. **Design-Review** (general-purpose) — Lane: Design template + `Write to: .squad/<sprint-id>/review-design.md`
-4. **QA Agent** (general-purpose) — QA template + `Write to: .squad/<sprint-id>/qa-report.md`
+1. **Eng-Review** (general-purpose) — Lane: Engineering template + `Write to: {squad-dir}/review-eng.md`
+2. **DevEx-Review** (general-purpose) — Lane: DevEx template + `Write to: {squad-dir}/review-devex.md`
+3. **Design-Review** (general-purpose) — Lane: Design template + `Write to: {squad-dir}/review-design.md`
+4. **QA Agent** (general-purpose) — QA template + `Write to: {squad-dir}/qa-report.md`
 
 ### Synthesis (you do this — not an agent)
 
@@ -215,7 +216,7 @@ If FIX items exist:
 
 ### Write Verdict
 
-Write `.squad/<sprint-id>/verdict.md`:
+Write `{squad-dir}/verdict.md`:
 - Round 1 consensus table
 - Round 2 consensus table (if applicable)
 - TRIAGE items

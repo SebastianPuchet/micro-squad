@@ -10,15 +10,16 @@ You are the **Verify Lead**. You run an adversarial review in three specialized 
 
 ## Initialization
 
-1. Read `orchestrator-contract.md` and `agent-prompts.md` from `~/.claude/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
-2. Follow the Sprint Initialization Protocol: find active sprint, read state.md for base branch, test command, and `careful` flag.
+1. Read `orchestrator-contract.md` and `agent-prompts.md` from `~/.agents/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
+2. Compute `$SQUAD_ROOT` per orchestrator-contract.md §Squad Dir Resolution before reading/writing artifacts.
+3. Follow the Sprint Initialization Protocol: find active sprint, read state.md for base branch, test command, and `careful` flag.
 
 ## Dependency Check
 
 Read state.md. Verify:
 - build is `done` (REQUIRED)
 
-Read `.squad/<sprint-id>/plan.md` and `.squad/<sprint-id>/build-log.md`. Both must exist.
+Read `{squad-dir}/plan.md` and `{squad-dir}/build-log.md`. Both must exist.
 
 If base branch is not in state.md, detect it:
 ```bash
@@ -35,13 +36,13 @@ git commit --allow-empty -m "squad-checkpoint: verify"
 
 ## Round 1 — Launch Four Agents in Parallel
 
-Read `agent-prompts.md` (the `## Review Lanes` section + the `## QA` section). Replace `{sprint-id}`, `{base-branch}`, `{test-command}`.
+Read `agent-prompts.md` (the `## Review Lanes` section + the `## QA` section). Replace `{squad-dir}` (absolute path), `{sprint-id}`, `{base-branch}`, `{test-command}`.
 
 Construct four prompts:
-- **Eng-Review**: Lane: Engineering template. Append `"Write to: .squad/<sprint-id>/review-eng.md"`
-- **DevEx-Review**: Lane: DevEx template. Append `"Write to: .squad/<sprint-id>/review-devex.md"`
-- **Design-Review**: Lane: Design template. Append `"Write to: .squad/<sprint-id>/review-design.md"`
-- **QA**: QA template. Append `"Write to: .squad/<sprint-id>/qa-report.md"`
+- **Eng-Review**: Lane: Engineering template. Append `"Write to: {squad-dir}/review-eng.md"`
+- **DevEx-Review**: Lane: DevEx template. Append `"Write to: {squad-dir}/review-devex.md"`
+- **Design-Review**: Lane: Design template. Append `"Write to: {squad-dir}/review-design.md"`
+- **QA**: QA template. Append `"Write to: {squad-dir}/qa-report.md"`
 
 Launch all FOUR in a single message (four Agent tool calls, all `subagent_type: general-purpose`).
 
@@ -112,7 +113,7 @@ If FIX items exist:
 
 ## Write Verdict
 
-Write `.squad/<sprint-id>/verdict.md`:
+Write `{squad-dir}/verdict.md`:
 
 ```markdown
 # Verdict: APPROVED | APPROVED WITH NOTES | ESCALATED
@@ -140,7 +141,7 @@ After writing verdict.md, extract 1-3 key findings from FIX and TRIAGE items:
 
 1. Read verdict.md for FIX and TRIAGE items.
 2. For each actionable finding, format as: `- YYYY-MM-DD <sprint-slug>: <finding>`
-3. Append to `.squad/learnings.md` in the project root.
+3. Append to `{squad-dir}/../learnings.md` (the per-repo learnings file, one level above the sprint dir).
 4. If the file doesn't exist, create it with `# Learnings` followed by a blank line.
 5. If the file exceeds 50 entries after appending, trim the oldest 10.
 

@@ -24,24 +24,24 @@ SCRIPT_DIR_REAL="$(realpath_portable "$SCRIPT_DIR")"
 ALSO_CLAUDE=0
 ALSO_COPILOT=0
 NO_MIGRATE=0
-FORCE=0
+ASSUME_YES=0
 
 while [ $# -gt 0 ]; do
     case "$1" in
         --claude)    ALSO_CLAUDE=1 ;;
         --copilot)   ALSO_COPILOT=1 ;;
         --no-migrate) NO_MIGRATE=1 ;;
-        --force)     FORCE=1 ;;
+        --yes|-y)    ASSUME_YES=1 ;;
         --help|-h)
             cat <<EOF
 micro-squad setup
 
-Usage: ./setup [--claude] [--copilot] [--no-migrate] [--force]
+Usage: ./setup [--claude] [--copilot] [--no-migrate] [--yes]
 
   --claude       Also symlink skills into ~/.claude/skills/
   --copilot      Also symlink skills into ~/.copilot/skills/
   --no-migrate   Skip the in-repo .squad/ migration prompt
-  --force        Overwrite foreign skill files without prompting
+  --yes, -y      Assume yes to all prompts (migration: move; foreign skill: overwrite)
 
 Default install path: ~/.agents/skills/  (read by both Claude and Copilot)
 Artifacts default:    ~/.agents/squad-artifacts/<repo-id>/
@@ -50,8 +50,8 @@ EOF
             exit 0
             ;;
         *)
-            printf "Unknown flag: %s\n" "$1" >&2
-            printf "Run ./setup --help for usage.\n" >&2
+            printf "setup: unknown flag: %s\n" "$1" >&2
+            printf "setup: run ./setup --help for usage.\n" >&2
             exit 1
             ;;
     esac
@@ -60,7 +60,7 @@ done
 
 # Guard: run from the source root
 if [ ! -f "$SCRIPT_DIR/squad/SKILL.md" ]; then
-    printf "Error: run setup from the micro-squad source root (squad/SKILL.md not found).\n" >&2
+    printf "setup: run from the micro-squad source root (squad/SKILL.md not found).\n" >&2
     exit 1
 fi
 
@@ -91,35 +91,47 @@ should_install_skill() {
             fi
         fi
     fi
-    if [ "$FORCE" -eq 1 ]; then
+    if [ "$ASSUME_YES" -eq 1 ]; then
         return 0
     fi
-    printf "\nForeign skill file found: %s\n" "$target_file" >&2
-    printf "  (not a symlink into %s)\n" "$SCRIPT_DIR_REAL" >&2
-    printf "Recommendation: A (overwrite) — micro-squad's install needs this path.\n" >&2
-    printf "A) overwrite  B) skip this skill  C) abort\n" >&2
-    printf "Choice [A/b/c]: " >&2
-    local choice
-    read -r choice
+    printf "\nForeign skill file found at %s (not a symlink into %s).\n" "$target_file" "$SCRIPT_DIR_REAL" >&2
+    printf "\n" >&2
+    printf "Recommendation: A (overwrite) because micro-squad's install needs this path.\n" >&2
+    printf "\n" >&2
+    printf "A) overwrite [replace with symlink into %s]\n" "$SCRIPT_DIR_REAL" >&2
+    printf "B) skip      [leave existing file untouched, this skill not installed]\n" >&2
+    printf "C) abort     [exit setup]\n" >&2
+    printf "\n" >&2
+    printf "Choice [A]: " >&2
+    local choice=""
+    if [ -t 0 ]; then
+        read -r choice
+    else
+        printf "\nsetup: non-interactive stdin — defaulting to <skip>. Use --yes to override.\n" >&2
+        return 1
+    fi
     case "$choice" in
         ""|a|A) return 0 ;;
-        b|B)    printf "  ! skipped\n" >&2; return 1 ;;
-        c|C)    printf "Aborted.\n" >&2; exit 1 ;;
-        *)      printf "Unknown choice; treating as skip.\n" >&2; return 1 ;;
+        b|B)    printf "  skipped\n" >&2; return 1 ;;
+        c|C)    printf "setup: aborted.\n" >&2; exit 1 ;;
+        *)      printf "setup: unknown choice; treating as skip.\n" >&2; return 1 ;;
     esac
 }
 
+INSTALLED_COUNT=0
 install_symlinks_into() {
     local skills_root="$1"
     mkdir -p "$skills_root"
 
+    local installed_here=0
     for skill in "${SKILLS[@]}"; do
         local target="$skills_root/$skill"
         mkdir -p "$target"
         if should_install_skill "$target/SKILL.md"; then
             [ -L "$target/SKILL.md" ] && rm "$target/SKILL.md"
             ln -sf "$SCRIPT_DIR_REAL/$skill/SKILL.md" "$target/SKILL.md"
-            echo "  ✓ /$skill -> $skills_root"
+            echo "  ✓ /$skill"
+            installed_here=$((installed_here + 1))
         fi
     done
 
@@ -131,7 +143,10 @@ install_symlinks_into() {
             ln -sf "$SCRIPT_DIR_REAL/_shared/$file" "$shared_target"
         fi
     done
-    echo "  ✓ shared conventions -> $skills_root/micro-squad-shared/"
+    echo "  ✓ shared conventions"
+    echo ""
+    echo "Installed $installed_here skills to $skills_root/"
+    INSTALLED_COUNT=$installed_here
 }
 
 install_symlinks_into "$SKILLS_DIR"
@@ -175,55 +190,86 @@ maybe_migrate() {
     local target_root="$ARTIFACTS_DIR/$repo_id"
 
     echo ""
-    echo "In-repo .squad/ directory detected:"
+    echo "In-repo .squad/ directory detected. Each sprint dir would move to its destination below."
+    echo ""
     for sprint_dir in "$PWD"/.squad/*/; do
         [ -d "$sprint_dir" ] || continue
         local name size
         name=$(basename "$sprint_dir")
         size=$(du -sh "$sprint_dir" 2>/dev/null | cut -f1)
-        printf "  - %s  (%s)\n" "$name" "$size"
+        printf "  - %-40s  →  %s/%s/  (%s)\n" "$name" "$target_root" "$name" "$size"
     done
-    [ -f "$PWD/.squad/learnings.md" ] && printf "  - learnings.md\n"
+    [ -f "$PWD/.squad/learnings.md" ] && printf "  - %-40s  →  %s/learnings.md\n" "learnings.md" "$target_root"
 
     echo ""
-    echo "Recommendation: m (move) — keeps the work repo clean; artifacts live in \$HOME/.agents/squad-artifacts/$repo_id/."
-    echo "  [m] move   — mv each sprint dir + learnings.md to $target_root/"
-    echo "  [c] copy   — cp -R (leaves originals in place; both copies will drift)"
-    echo "  [s] skip   — leave them alone for now (will reprompt on next run; use --no-migrate to silence)"
-    echo "  [a] abort  — exit setup without further changes"
-    printf "Choice [M/c/s/a]: "
-    local choice
-    read -r choice
+    echo "Recommendation: A (move) because it keeps the work repo clean; artifacts live in \$HOME/.agents/squad-artifacts/$repo_id/."
+    echo ""
+    echo "A) move   [mv each sprint dir + learnings.md to $target_root/]"
+    echo "B) copy   [cp -R; leaves originals in place; both copies will drift]"
+    echo "C) skip   [leave them alone; reprompts on next run; use --no-migrate to silence]"
+    echo "D) abort  [exit setup without further changes]"
+    echo ""
+    printf "Choice [A]: "
+    local choice=""
+    if [ -t 0 ]; then
+        read -r choice
+    else
+        echo ""
+        echo "setup: non-interactive stdin — defaulting to <skip>. Use --yes to override."
+        return 0
+    fi
+    if [ "$ASSUME_YES" -eq 1 ] && [ -z "$choice" ]; then
+        choice="a"
+    fi
     case "$choice" in
-        ""|m|M)
+        ""|a|A)
             mkdir -p "$target_root"
+            local moved=0
+            local failed=0
+            local skipped=0
+            local failed_names=""
+            local moved_names=""
             for sprint_dir in "$PWD"/.squad/*/; do
                 [ -d "$sprint_dir" ] || continue
                 local name="$(basename "$sprint_dir")"
                 if [ -e "$target_root/$name" ]; then
-                    printf "  ! %s already exists at target — skipping\n" "$name"
+                    printf "  - %s already exists at target — skipping\n" "$name"
+                    skipped=$((skipped + 1))
                     continue
                 fi
-                if mv "$sprint_dir" "$target_root/"; then
+                if mv "$sprint_dir" "$target_root/" 2>/dev/null; then
                     printf "  ✓ moved %s\n" "$name"
+                    moved=$((moved + 1))
+                    moved_names="$moved_names $name"
                 else
-                    printf "  ! failed to move %s — stopping (no rollback; finish manually)\n" "$name" >&2
-                    exit 1
+                    printf "  setup: failed to move %s — left in place, continuing\n" "$name" >&2
+                    failed=$((failed + 1))
+                    failed_names="$failed_names $name"
                 fi
             done
             if [ -f "$PWD/.squad/learnings.md" ]; then
-                mv "$PWD/.squad/learnings.md" "$target_root/learnings.md" || true
-                printf "  ✓ moved learnings.md\n"
+                if mv "$PWD/.squad/learnings.md" "$target_root/learnings.md" 2>/dev/null; then
+                    printf "  ✓ moved learnings.md\n"
+                    moved=$((moved + 1))
+                else
+                    printf "  setup: failed to move learnings.md — left in place\n" >&2
+                    failed=$((failed + 1))
+                fi
             fi
             rmdir "$PWD/.squad" 2>/dev/null || true
+            echo ""
+            echo "Migration summary: $moved moved, $failed failed, $skipped skipped."
+            if [ -n "$failed_names" ]; then
+                echo "  Failed dirs (still in $PWD/.squad/):$failed_names"
+            fi
             ;;
-        c|C)
+        b|B)
             mkdir -p "$target_root"
             for sprint_dir in "$PWD"/.squad/*/; do
                 [ -d "$sprint_dir" ] || continue
                 local name="$(basename "$sprint_dir")"
                 if [ -e "$target_root/$name" ]; then
-                    printf "  ! %s already exists at target — skipping\n" "$name"
+                    printf "  - %s already exists at target — skipping\n" "$name"
                     continue
                 fi
                 cp -R "$sprint_dir" "$target_root/" && printf "  ✓ copied %s\n" "$name"
@@ -231,26 +277,32 @@ maybe_migrate() {
             [ -f "$PWD/.squad/learnings.md" ] && cp "$PWD/.squad/learnings.md" "$target_root/learnings.md" && printf "  ✓ copied learnings.md\n"
             printf "  note: originals left in %s/.squad/ — both copies will drift on next sprint\n" "$PWD"
             ;;
-        s|S)
+        c|C)
             echo "  skipped — will prompt again on next ./setup run (or use --no-migrate)"
             ;;
-        a|A)
-            echo "Aborted."
+        d|D)
+            echo "setup: aborted."
             exit 1
             ;;
         *)
-            echo "Unknown choice; skipping migration."
+            echo "setup: unknown choice; skipping migration."
             ;;
     esac
 }
 
 maybe_migrate
 
+# Compute resolved repo-id for the final summary
+SUMMARY_REPO_ID=""
+if SUMMARY_REPO_ID=$(git -C "$PWD" rev-parse --show-toplevel 2>/dev/null); then
+    SUMMARY_REPO_ID=$(basename "$SUMMARY_REPO_ID")
+else
+    SUMMARY_REPO_ID=$(basename "$PWD")
+fi
+
 echo ""
-echo "Installed ${#SKILLS[@]} skills to $SKILLS_DIR/"
-echo ""
-echo "Artifacts root: $ARTIFACTS_DIR/<repo-id>/"
-echo "Override with:  export SQUAD_DIR=/path/to/your/artifact/root"
+echo "Sprint artifacts → $ARTIFACTS_DIR/$SUMMARY_REPO_ID/"
+echo "Override with:    export SQUAD_DIR=/path/to/your/artifact/root"
 echo ""
 echo "Usage:"
 echo "  /squad add dark mode        full sprint"

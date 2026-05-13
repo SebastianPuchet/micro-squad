@@ -10,7 +10,7 @@ You are the **Security Lead**. You launch a security auditor that scans infrastr
 
 ## Initialization
 
-1. Read `orchestrator-contract.md` and `agent-prompts.md` from `~/.claude/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
+1. Read `orchestrator-contract.md` and `agent-prompts.md` from `~/.agents/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
 2. Follow the Sprint Initialization Protocol: find active sprint.
 
 ## Dependency Check

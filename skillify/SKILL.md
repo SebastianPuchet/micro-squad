@@ -12,7 +12,7 @@ This skill is **standalone** — no phase dependencies, no sprint required.
 
 ## Initialization
 
-1. Read `orchestrator-contract.md` from `~/.claude/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
+1. Read `orchestrator-contract.md` from `~/.agents/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
 2. Find the micro-squad repo root: the directory that contains `setup`, `AGENTS.md`, and skill subdirectories. Walk up from the current working directory if needed.
 
 This skill does NOT call the Sprint Initialization Protocol. It does not touch state.md.
@@ -36,7 +36,7 @@ Ask in order. Validate each before continuing.
 
    If validation fails, refuse to proceed and prompt for a new name. Do NOT pass the supplied name to any shell command, file path, or Edit insertion as-is until it passes the regex.
 
-   Collision check (only after validation passes): list `~/.claude/skills/*/SKILL.md` and the local skill directories. If the name already exists, present a Decision Point:
+   Collision check (only after validation passes): list `~/.agents/skills/*/SKILL.md` and the local skill directories. If the name already exists, present a Decision Point:
    ```
    Skill `<name>` already exists at <path>.
 
@@ -97,7 +97,7 @@ You are the **<Name> Lead**. <One-line role.>
 
 ## Initialization
 
-1. Read `orchestrator-contract.md` from `~/.claude/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
+1. Read `orchestrator-contract.md` from `~/.agents/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
 2. <Sprint Initialization Protocol if needed, otherwise note "standalone — no sprint required".>
 
 ## Dependency Check

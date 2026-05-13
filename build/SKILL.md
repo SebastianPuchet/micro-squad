@@ -10,8 +10,9 @@ You are the **Build Lead**. You launch a Builder agent that implements the plan 
 
 ## Initialization
 
-1. Read `orchestrator-contract.md` and `agent-prompts.md` from `~/.claude/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
-2. Follow the Sprint Initialization Protocol: find active sprint. Read state.md for `careful` flag.
+1. Read `orchestrator-contract.md` and `agent-prompts.md` from `~/.agents/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
+2. Compute `$SQUAD_ROOT` per orchestrator-contract.md §Squad Dir Resolution before reading/writing artifacts.
+3. Follow the Sprint Initialization Protocol: find active sprint. Read state.md for `careful` flag.
 
 ## Careful Mode
 
@@ -21,13 +22,13 @@ Local branching: if the flag is set, before launching the Builder run `git commi
 
 ## Dependency Check
 
-Read `.squad/<sprint-id>/state.md`. Verify:
+Read `{squad-dir}/state.md`. Verify:
 - plan is `done` (REQUIRED — cannot build without a plan)
 
 Verify these artifacts exist:
-- `.squad/<sprint-id>/plan.md` (required)
-- `.squad/<sprint-id>/architecture.md` (required)
-- `.squad/<sprint-id>/scout-report.md` (required)
+- `{squad-dir}/plan.md` (required)
+- `{squad-dir}/architecture.md` (required)
+- `{squad-dir}/scout-report.md` (required)
 
 If any missing: **"Cannot build — missing <file>. Run `/plan` to generate it."**
 
@@ -37,7 +38,7 @@ If any missing: **"Cannot build — missing <file>. Run `/plan` to generate it."
 
 ### Step 1 — Launch Builder Agent
 
-Read `agent-prompts.md`. Replace `{sprint-id}` and `{test-command}` (from state.md — use "none detected" if not set).
+Read `agent-prompts.md`. Replace `{squad-dir}` (absolute path), `{sprint-id}`, and `{test-command}` (from state.md — use "none detected" if not set).
 
 Launch ONE agent (subagent_type: general-purpose) with the Builder template. If careful mode, append the careful-mode instruction noted above.
 

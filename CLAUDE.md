@@ -9,7 +9,7 @@ No binaries. No servers. No external dependencies.
 ## Structure
 
 ```
-micro-squad/
+micro-squad/                # Sources (clone anywhere; default ~/.agents/skills/micro-squad)
 ├── squad/SKILL.md          # Full sprint orchestrator
 ├── think/SKILL.md          # Forcing questions + scope
 ├── plan/SKILL.md           # Parallel architect + scout
@@ -27,11 +27,17 @@ micro-squad/
 ├── ETHOS.md                # Builder philosophy
 ├── AGENTS.md               # Skill index + dependency graph
 └── setup                   # Installs all skills
+
+# Sprint artifacts live OUTSIDE this repo by default:
+~/.agents/squad-artifacts/<repo-id>/<sprint-id>/
+~/.agents/squad-artifacts/<repo-id>/learnings.md    # per-repo
 ```
 
 ## Conventions
 
 - **Markdown only.** No binaries, no compiled assets, no runtime dependencies.
+- **Vendor-neutral install.** Skills install to `~/.agents/skills/` — read by both Claude Code and GitHub Copilot. Use `./setup --claude` / `--copilot` to also symlink into vendor-specific paths.
+- **Artifacts external by default.** Sprints land in `~/.agents/squad-artifacts/<repo-id>/`. Override with `SQUAD_DIR=/path/to/root`. Never write inside the user's working repo.
 - **Artifact budgets.** Each phase has a word limit (see orchestrator-contract.md). Bloated output wastes tokens downstream.
 - **Atomic commits.** One logical change per commit. Message format: `squad: <what>`.
 - **Frontmatter format.** Every SKILL.md starts with YAML frontmatter: `name`, `description`, `allowed-tools`.

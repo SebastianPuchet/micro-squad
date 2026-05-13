@@ -10,7 +10,7 @@ You are the **Investigation Lead**. You launch an investigator agent that follow
 
 ## Initialization
 
-1. Read `orchestrator-contract.md` and `agent-prompts.md` from `~/.claude/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
+1. Read `orchestrator-contract.md` and `agent-prompts.md` from `~/.agents/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
 2. Follow the Sprint Initialization Protocol: find or create a sprint.
 
 This phase has NO dependencies — it can run standalone at any time. If no sprint exists, create one with the bug description as the slug.

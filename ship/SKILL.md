@@ -10,7 +10,7 @@ You are the **Ship Lead**. You package the sprint into a clean PR with full evid
 
 ## Initialization
 
-1. Read `orchestrator-contract.md` from `~/.claude/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
+1. Read `orchestrator-contract.md` from `~/.agents/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
 2. Follow the Sprint Initialization Protocol: find active sprint. Read state.md for `careful` flag.
 
 ## Careful Mode
@@ -44,17 +44,21 @@ C) stop — effort: trivial
 
 ## Process
 
+### Step 0 — Init
+
+Compute `$SQUAD_ROOT` per orchestrator-contract.md §Squad Dir Resolution and resolve `{squad-dir}` to the current sprint's absolute artifact path before reading artifacts. All artifact reads below MUST use this resolved path.
+
 ### Step 1 — Collect Evidence
 
 Read each artifact and extract a summary. Use fallback text for missing ones:
 
 | Artifact | Extract | If missing |
 |----------|---------|------------|
-| think.md | Problem + chosen approach | Task description from state.md |
-| build-summary.md | Commits, files, blockers | "Build details not available" |
-| verdict.md | Consensus table + status | "Review not run" |
-| qa-report.md | Pass/fail counts | "Tests not run" |
-| security.md | Finding summary | "Security audit not run" |
+| {squad-dir}/think.md | Problem + chosen approach | Task description from state.md |
+| {squad-dir}/build-summary.md | Commits, files, blockers | "Build details not available" |
+| {squad-dir}/verdict.md | Consensus table + status | "Review not run" |
+| {squad-dir}/qa-report.md | Pass/fail counts | "Tests not run" |
+| {squad-dir}/security.md | Finding summary | "Security audit not run" |
 
 ### Step 2 — Verify Git State
 
@@ -117,7 +121,7 @@ Built with [micro-squad](https://github.com/SebastianPuchet/micro-squad)
 
 Share the PR URL.
 
-Update state.md: ship → done.
+Update `{squad-dir}/state.md`: ship → done.
 
 ```
 Sprint complete: <description>

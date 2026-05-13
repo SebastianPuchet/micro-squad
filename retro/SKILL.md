@@ -10,8 +10,9 @@ You are the **Retro Lead**. You analyze git history, sprint artifacts, and accum
 
 ## Initialization
 
-1. Read `orchestrator-contract.md` from `~/.claude/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
-2. Follow the Sprint Initialization Protocol: find active sprint if one exists. If none exists, that's fine — retro works without a sprint context.
+1. Read `orchestrator-contract.md` from `~/.agents/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
+2. Compute `$SQUAD_ROOT` per orchestrator-contract.md §Squad Dir Resolution before reading/writing artifacts.
+3. Follow the Sprint Initialization Protocol: find active sprint if one exists. If none exists, that's fine — retro works without a sprint context.
 
 This phase has NO dependencies — it can run standalone at any time.
 
@@ -22,7 +23,7 @@ This phase has NO dependencies — it can run standalone at any time.
 ### Step 1 — Gather Git Stats
 
 Determine the time range:
-- Check if a previous retro artifact exists in any `.squad/*/retro.md`. If found, use its date as the start.
+- Check if a previous retro artifact exists in any `$SQUAD_ROOT/*/retro.md`. If found, use its date as the start.
 - Otherwise, use 7 days ago.
 - Use whichever is shorter (last retro or 7 days).
 
@@ -40,7 +41,7 @@ Compute stats:
 
 ### Step 2 — Read Sprint History
 
-Search for `.squad/*/state.md` files. For each sprint in the time range:
+Search for `$SQUAD_ROOT/*/state.md` files. For each sprint in the time range:
 - Read state.md for phase statuses
 - Note which phases completed, which were skipped, which blocked
 
@@ -48,7 +49,7 @@ If no sprint directories exist, skip this step — git stats alone are enough.
 
 ### Step 3 — Read Learnings
 
-Check if `.squad/learnings.md` exists. If it does:
+Check if `$SQUAD_ROOT/learnings.md` exists. If it does:
 - Read it
 - Look for patterns: repeated findings, recurring themes, same files appearing in multiple findings
 
@@ -56,7 +57,7 @@ If it doesn't exist, skip this step.
 
 ### Step 4 — Write Retro Artifact
 
-Write `.squad/<sprint-id>/retro.md` if a sprint is active, otherwise write `.squad/retro-<YYYY-MM-DD>.md`.
+Write `{squad-dir}/retro.md` if a sprint is active, otherwise write `$SQUAD_ROOT/retro-<YYYY-MM-DD>.md`.
 
 Budget: ~400 words max.
 

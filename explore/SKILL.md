@@ -12,11 +12,12 @@ This skill is **standalone** — no phase dependencies. It may run inside an act
 
 ## Initialization
 
-1. Read `orchestrator-contract.md` from `~/.claude/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
-2. Detect active sprint per the Sprint Initialization Protocol in the contract: search `.squad/*/state.md`. An "active sprint" is one whose state table has at least one phase in `pending` or `running` state — not merely one whose state.md exists.
+1. Read `orchestrator-contract.md` from `~/.agents/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
+2. Compute `$SQUAD_ROOT` per orchestrator-contract.md §Squad Dir Resolution before reading/writing artifacts.
+3. Detect active sprint per the Sprint Initialization Protocol in the contract: search `$SQUAD_ROOT/*/state.md`. An "active sprint" is one whose state table has at least one phase in `pending` or `running` state — not merely one whose state.md exists.
    - If exactly ONE active sprint is found → treat it as active (write `exploration.md` there).
    - If MULTIPLE active sprints are found → present a Decision Point listing them; user picks which to write to, or chooses stdout.
-   - If NONE are active (all sprints have only `done` / `skipped` / `blocked` phases, or no `.squad/*/state.md` exists) → print to stdout. Do NOT create `.squad/`.
+   - If NONE are active (all sprints have only `done` / `skipped` / `blocked` phases, or no `$SQUAD_ROOT/*/state.md` exists) → print to stdout. Do NOT create `{squad-dir}`.
 
 This skill does NOT mutate state.md.
 
@@ -59,7 +60,7 @@ Mark one as RECOMMENDED with a clear reason. Take a position.
 
 **If active sprint detected:**
 
-Target path: `.squad/<sprint-id>/exploration.md`.
+Target path: `{squad-dir}/exploration.md`.
 
 If the file already exists, present a Decision Point:
 ```
@@ -91,10 +92,10 @@ Otherwise, write `exploration.md` with this structure:
 
 Budget: ~600 words max.
 
-**If no active sprint:** print the same content directly to the chat. Do NOT create `.squad/`.
+**If no active sprint:** print the same content directly to the chat. Do NOT create `{squad-dir}`.
 
 ### Step 4 — Report
 
-If wrote artifact: `"Exploration written to .squad/<sprint-id>/exploration.md. /think will read it as input."`
+If wrote artifact: `"Exploration written to {squad-dir}/exploration.md. /think will read it as input."` (interpolate `{squad-dir}` to the absolute path before printing).
 
 If printed: `"Recon done. Pipe this into /think or /squad when ready."`

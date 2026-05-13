@@ -1,5 +1,9 @@
 # micro-squad — Skill Index
 
+**Install path:** `~/.agents/skills/` (vendor-neutral — read by both Claude Code and GitHub Copilot). Run `./setup --claude` / `--copilot` to also symlink into vendor-specific paths.
+
+**Artifacts:** `~/.agents/squad-artifacts/<repo-id>/<sprint-id>/` by default. Override with `SQUAD_DIR=/path/to/root` in your shell.
+
 | Command | Purpose |
 |---------|---------|
 | `/squad` | Full sprint: think > plan > build > verify > ship. Pass `--careful` for high-stakes mode. |

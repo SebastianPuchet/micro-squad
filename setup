@@ -1,9 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
 SKILLS_DIR="$HOME/.agents/skills"
 ARTIFACTS_DIR="$HOME/.agents/squad-artifacts"
+
+# Portable realpath — macOS lacks readlink -f
+realpath_portable() {
+    local p="$1"
+    if command -v greadlink >/dev/null 2>&1; then
+        greadlink -f "$p"
+    elif readlink -f / >/dev/null 2>&1; then
+        readlink -f "$p"
+    else
+        python3 -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$p" 2>/dev/null \
+            || (cd "$(dirname "$p")" 2>/dev/null && printf "%s/%s\n" "$(pwd -P)" "$(basename "$p")")
+    fi
+}
+
+SCRIPT_DIR_REAL="$(realpath_portable "$SCRIPT_DIR")"
 
 # Flags
 ALSO_CLAUDE=0
@@ -63,21 +78,24 @@ mkdir -p "$ARTIFACTS_DIR"
 # Returns 0 (proceed) or 1 (skip)
 should_install_skill() {
     local target_file="$1"
-    if [ ! -e "$target_file" ]; then
+    if [ ! -e "$target_file" ] && [ ! -L "$target_file" ]; then
         return 0
     fi
     if [ -L "$target_file" ]; then
-        local link_target
-        link_target=$(readlink "$target_file" 2>/dev/null || echo "")
-        case "$link_target" in
-            "$SCRIPT_DIR"/*) return 0 ;;
-        esac
+        local resolved
+        resolved="$(realpath_portable "$target_file" 2>/dev/null || echo "")"
+        # Exact string match (no globbing) — resolved must live under canonical SCRIPT_DIR
+        if [[ -n "$resolved" && -n "$SCRIPT_DIR_REAL" ]]; then
+            if [[ "$resolved" = "$SCRIPT_DIR_REAL"/* || "$resolved" = "$SCRIPT_DIR_REAL" ]]; then
+                return 0
+            fi
+        fi
     fi
     if [ "$FORCE" -eq 1 ]; then
         return 0
     fi
     printf "\nForeign skill file found: %s\n" "$target_file" >&2
-    printf "  (not a symlink into %s)\n" "$SCRIPT_DIR" >&2
+    printf "  (not a symlink into %s)\n" "$SCRIPT_DIR_REAL" >&2
     printf "Recommendation: A (overwrite) — micro-squad's install needs this path.\n" >&2
     printf "A) overwrite  B) skip this skill  C) abort\n" >&2
     printf "Choice [A/b/c]: " >&2
@@ -100,7 +118,7 @@ install_symlinks_into() {
         mkdir -p "$target"
         if should_install_skill "$target/SKILL.md"; then
             [ -L "$target/SKILL.md" ] && rm "$target/SKILL.md"
-            ln -sf "$SCRIPT_DIR/$skill/SKILL.md" "$target/SKILL.md"
+            ln -sf "$SCRIPT_DIR_REAL/$skill/SKILL.md" "$target/SKILL.md"
             echo "  ✓ /$skill -> $skills_root"
         fi
     done
@@ -110,7 +128,7 @@ install_symlinks_into() {
         local shared_target="$skills_root/micro-squad-shared/$file"
         if should_install_skill "$shared_target"; then
             [ -L "$shared_target" ] && rm "$shared_target"
-            ln -sf "$SCRIPT_DIR/_shared/$file" "$shared_target"
+            ln -sf "$SCRIPT_DIR_REAL/_shared/$file" "$shared_target"
         fi
     done
     echo "  ✓ shared conventions -> $skills_root/micro-squad-shared/"

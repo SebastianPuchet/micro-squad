@@ -61,18 +61,31 @@ Read [ETHOS.md](ETHOS.md) for the full philosophy.
 
 ## Install
 
-Vendor-neutral default — both Claude Code and GitHub Copilot read from `~/.agents/skills/`:
+Vendor-neutral default — both Claude Code and GitHub Copilot read from `~/.agents/skills/`.
+
+What `./setup` does by default:
+
+1. Symlinks every skill's `SKILL.md` into `~/.agents/skills/` (read by both Claude Code and GitHub Copilot).
+2. Creates `~/.agents/squad-artifacts/<repo-id>/` as the sprint artifact root (outside your working repo — nothing to `.gitignore`).
+3. If an in-repo `.squad/` directory from a previous version exists, prompts you interactively to migrate it.
 
 ```bash
 git clone https://github.com/SebastianPuchet/micro-squad.git ~/.agents/skills/micro-squad
 cd ~/.agents/skills/micro-squad && ./setup
 ```
 
+Run `./setup --help` to see all flags.
+
 Flags:
 
 - `./setup --claude` — also symlink into `~/.claude/skills/` (for Claude Code users who haven't migrated yet)
 - `./setup --copilot` — also symlink into `~/.copilot/skills/`
 - `./setup --no-migrate` — skip the in-repo `.squad/` migration prompt
+- `./setup --yes` — assume yes to all prompts (migration: move; foreign-skill collision: overwrite)
+
+### GitHub Copilot support
+
+The `~/.agents/skills/` path is the vendor-neutral standard. GitHub Copilot's Agent Skills reads SKILL.md files from this directory with the same frontmatter Claude uses — no separate install needed. If you want belt-and-suspenders, run `./setup --copilot` to also symlink to `~/.copilot/skills/`.
 
 ### Where sprint artifacts live
 
@@ -86,9 +99,9 @@ export SQUAD_DIR=/path/to/your/artifact/root
 
 When set, micro-squad writes all sprint artifacts under `$SQUAD_DIR/<sprint-id>/` instead of the per-repo default.
 
-### GitHub Copilot support
+### How `<repo-id>` is derived
 
-The `~/.agents/skills/` path is the vendor-neutral standard. GitHub Copilot's Agent Skills reads SKILL.md files from this directory with the same frontmatter Claude uses — no separate install needed. If you want belt-and-suspenders, run `./setup --copilot` to also symlink to `~/.copilot/skills/`.
+`<repo-id>` is the `basename` of `git rev-parse --show-toplevel` (or `basename $PWD` outside a git repo). On first sprint creation, the resolved git origin URL is written to `~/.agents/squad-artifacts/<repo-id>/.repo-origin`. On later runs, if a different repo with the same basename shows up (e.g. two repos both called `app`), the new repo gets a `-<sha7>` suffix derived from its origin URL so the two artifact roots don't collide.
 
 ## Commands
 

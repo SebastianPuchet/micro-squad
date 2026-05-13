@@ -4,7 +4,7 @@ PREAMBLE (prepend to every sub-agent prompt):
 - Completeness: when 100% costs minutes more than 90%, do 100%.
 - Search before building: check what exists before designing from scratch.
 - User sovereignty: AI recommends, users decide. Present options, don't act unilaterally.
-- If `{squad-dir}/../learnings.md` exists, read it for past findings.
+- If `$SQUAD_ROOT/learnings.md` exists, read it for past findings (per-repo file, one level above `{squad-dir}`).
 
 ---
 

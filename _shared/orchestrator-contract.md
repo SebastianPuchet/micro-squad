@@ -45,51 +45,25 @@ test_command: npm test  # or "none detected"
 
 ---
 
-## Squad Dir Resolution
+## Squad Dir Resolution — Step-by-Step
 
-Every skill MUST resolve `$SQUAD_ROOT` at initialization, BEFORE reading or writing any artifact. Artifacts live OUTSIDE the user's working repo by default — there is no in-repo `.squad/` anymore.
+Every skill MUST run these steps before reading or writing artifacts. Run them via the Bash tool; do not paraphrase.
 
-### Resolution rule (precedence)
-
-```
-1. If $SQUAD_DIR env var is set and non-empty:
-     SQUAD_ROOT="$SQUAD_DIR"
-   Else:
-     repo_id=$(_resolve_repo_id)
-     SQUAD_ROOT="$HOME/.agents/squad-artifacts/$repo_id"
-
-2. _resolve_repo_id():
-     if git rev-parse --show-toplevel >/dev/null 2>&1:
-       toplevel=$(git rev-parse --show-toplevel)
-       basename=$(basename "$toplevel")
-       remote=$(git remote get-url origin 2>/dev/null || echo "$toplevel")
-       id="$basename"
-       # Collision: if $HOME/.agents/squad-artifacts/$id/.repo-origin exists
-       # and its contents != "$remote", append a hash suffix:
-       #   id="$basename-$(printf %s "$remote" | shasum | cut -c1-7)"
-     else:
-       id=$(basename "$PWD")
-     echo "$id"
-
-3. mkdir -p "$SQUAD_ROOT"
-   test -w "$SQUAD_ROOT" || trigger Decision Point:
-     A) fall back to ~/.agents/squad-artifacts/<repo-id>
-     B) prompt user for a new path
-     C) abort
-   NEVER silently write elsewhere.
-
-4. On NEW sprint creation, write "$SQUAD_ROOT/<sprint-id>/.repo-origin"
-   containing the remote URL (or toplevel path if no remote).
-
-5. Cache the resolved values in state.md header:
-     squad_dir: <absolute path to $SQUAD_ROOT/<sprint-id>>
-     repo_id: <resolved id>
-   Subsequent skills in the same sprint reuse them without re-resolving.
-```
+| # | Action | On failure |
+|---|--------|-----------|
+| 1 | Read `$SQUAD_DIR` from env. If set and non-empty → `SQUAD_ROOT=$SQUAD_DIR`. Skip to step 6. | — |
+| 2 | Run `git rev-parse --show-toplevel` → `$TOPLEVEL`. | `TOPLEVEL=$PWD` |
+| 3 | `repo_id=$(basename "$TOPLEVEL")`. | — |
+| 4 | Run `git remote get-url origin 2>/dev/null` → `$ORIGIN`. | `ORIGIN=$TOPLEVEL` |
+| 5 | Inspect `$HOME/.agents/squad-artifacts/$repo_id/.repo-origin`: if absent → keep `repo_id`; if contents match `$ORIGIN` → keep `repo_id`; if contents differ → `repo_id="${repo_id}-$(printf '%s' "$ORIGIN" \| shasum \| cut -c1-7)"`. | — |
+| 6 | `SQUAD_ROOT="$HOME/.agents/squad-artifacts/$repo_id"`. | — |
+| 7 | `mkdir -p "$SQUAD_ROOT"`. Verify `test -w "$SQUAD_ROOT"`. | Trigger Decision Point: A) fall back to `~/.agents/squad-artifacts/<repo-id>`, B) prompt user for new path, C) abort. NEVER silently write elsewhere. |
+| 8 | On NEW sprint creation, write `$SQUAD_ROOT/<sprint-id>/.repo-origin` containing `$ORIGIN`. | — |
+| 9 | Cache in state.md header: `squad_dir: $SQUAD_ROOT/<sprint-id>`, `repo_id: $repo_id`. Subsequent skills reuse without re-resolving. | — |
 
 ### Placeholder token
 
-`{squad-dir}` (curly braces — matches existing `{sprint-id}`, `{base-branch}` style). The launching skill interpolates `{squad-dir}` to an **absolute path** — `$SQUAD_ROOT/<sprint-id>` — before every Agent tool call. Sub-agents never see the placeholder, only the resolved absolute path.
+`{squad-dir}` (curly braces — matches existing `{sprint-id}`, `{base-branch}` style). The launching skill interpolates it to an **absolute path** — `$SQUAD_ROOT/<sprint-id>` — before every Agent tool call. Sub-agents never see the placeholder.
 
 All literal artifact paths in skill prompts and agent templates use `{squad-dir}/<artifact>.md`. No skill ever writes to `.squad/` in CWD.
 
@@ -99,7 +73,7 @@ All literal artifact paths in skill prompts and agent templates use `{squad-dir}
 
 ### `$SQUAD_DIR` override
 
-Users may set `SQUAD_DIR` in their shell to redirect artifacts (e.g., to a synced location, or to share between two repos that should pool sprints). When set, resolution skips repo-id computation entirely.
+Users may set `SQUAD_DIR` in their shell to redirect artifacts. When set, resolution skips repo-id computation entirely.
 
 ---
 
@@ -192,7 +166,9 @@ If a required artifact doesn't exist:
 
 ## Learnings
 
-If `{squad-dir}/../learnings.md` exists, read it for past findings. This file lives one level above the active sprint dir, inside the repo's artifact root, so learnings are per-repo. This file captures key findings from past sprints — things that went wrong, patterns discovered, edge cases hit.
+Learnings live at `$SQUAD_ROOT/learnings.md` (per-repo, one level above sprint dirs).
+
+If `$SQUAD_ROOT/learnings.md` exists, read it for past findings. This file captures key findings from past sprints — things that went wrong, patterns discovered, edge cases hit.
 
 - `/verify` appends 1-3 findings after each sprint review.
 - Format: `- YYYY-MM-DD <sprint-slug>: <finding>`

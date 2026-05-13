@@ -2,7 +2,52 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SKILLS_DIR="$HOME/.claude/skills"
+SKILLS_DIR="$HOME/.agents/skills"
+ARTIFACTS_DIR="$HOME/.agents/squad-artifacts"
+
+# Flags
+ALSO_CLAUDE=0
+ALSO_COPILOT=0
+NO_MIGRATE=0
+FORCE=0
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --claude)    ALSO_CLAUDE=1 ;;
+        --copilot)   ALSO_COPILOT=1 ;;
+        --no-migrate) NO_MIGRATE=1 ;;
+        --force)     FORCE=1 ;;
+        --help|-h)
+            cat <<EOF
+micro-squad setup
+
+Usage: ./setup [--claude] [--copilot] [--no-migrate] [--force]
+
+  --claude       Also symlink skills into ~/.claude/skills/
+  --copilot      Also symlink skills into ~/.copilot/skills/
+  --no-migrate   Skip the in-repo .squad/ migration prompt
+  --force        Overwrite foreign skill files without prompting
+
+Default install path: ~/.agents/skills/  (read by both Claude and Copilot)
+Artifacts default:    ~/.agents/squad-artifacts/<repo-id>/
+Override artifacts:   set \$SQUAD_DIR in your shell.
+EOF
+            exit 0
+            ;;
+        *)
+            printf "Unknown flag: %s\n" "$1" >&2
+            printf "Run ./setup --help for usage.\n" >&2
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+# Guard: run from the source root
+if [ ! -f "$SCRIPT_DIR/squad/SKILL.md" ]; then
+    printf "Error: run setup from the micro-squad source root (squad/SKILL.md not found).\n" >&2
+    exit 1
+fi
 
 echo "micro-squad — installing skills..."
 echo ""
@@ -10,27 +55,184 @@ echo ""
 # Skills to install
 SKILLS=(squad think plan build verify secure investigate ship retro skillify explore)
 
-for skill in "${SKILLS[@]}"; do
-    target="$SKILLS_DIR/$skill"
-    mkdir -p "$target"
+mkdir -p "$SKILLS_DIR"
+mkdir -p "$ARTIFACTS_DIR"
 
-    # Remove existing symlink if present
-    [ -L "$target/SKILL.md" ] && rm "$target/SKILL.md"
+# Foreign-skill guard
+# $1: target SKILL.md path
+# Returns 0 (proceed) or 1 (skip)
+should_install_skill() {
+    local target_file="$1"
+    if [ ! -e "$target_file" ]; then
+        return 0
+    fi
+    if [ -L "$target_file" ]; then
+        local link_target
+        link_target=$(readlink "$target_file" 2>/dev/null || echo "")
+        case "$link_target" in
+            "$SCRIPT_DIR"/*) return 0 ;;
+        esac
+    fi
+    if [ "$FORCE" -eq 1 ]; then
+        return 0
+    fi
+    printf "\nForeign skill file found: %s\n" "$target_file" >&2
+    printf "  (not a symlink into %s)\n" "$SCRIPT_DIR" >&2
+    printf "Recommendation: A (overwrite) — micro-squad's install needs this path.\n" >&2
+    printf "A) overwrite  B) skip this skill  C) abort\n" >&2
+    printf "Choice [A/b/c]: " >&2
+    local choice
+    read -r choice
+    case "$choice" in
+        ""|a|A) return 0 ;;
+        b|B)    printf "  ! skipped\n" >&2; return 1 ;;
+        c|C)    printf "Aborted.\n" >&2; exit 1 ;;
+        *)      printf "Unknown choice; treating as skip.\n" >&2; return 1 ;;
+    esac
+}
 
-    ln -sf "$SCRIPT_DIR/$skill/SKILL.md" "$target/SKILL.md"
-    echo "  ✓ /$skill"
-done
+install_symlinks_into() {
+    local skills_root="$1"
+    mkdir -p "$skills_root"
 
-# Symlink shared files
-mkdir -p "$SKILLS_DIR/micro-squad-shared"
-for file in orchestrator-contract.md agent-prompts.md; do
-    [ -L "$SKILLS_DIR/micro-squad-shared/$file" ] && rm "$SKILLS_DIR/micro-squad-shared/$file"
-    ln -sf "$SCRIPT_DIR/_shared/$file" "$SKILLS_DIR/micro-squad-shared/$file"
-done
-echo "  ✓ shared conventions"
+    for skill in "${SKILLS[@]}"; do
+        local target="$skills_root/$skill"
+        mkdir -p "$target"
+        if should_install_skill "$target/SKILL.md"; then
+            [ -L "$target/SKILL.md" ] && rm "$target/SKILL.md"
+            ln -sf "$SCRIPT_DIR/$skill/SKILL.md" "$target/SKILL.md"
+            echo "  ✓ /$skill -> $skills_root"
+        fi
+    done
+
+    mkdir -p "$skills_root/micro-squad-shared"
+    for file in orchestrator-contract.md agent-prompts.md; do
+        local shared_target="$skills_root/micro-squad-shared/$file"
+        if should_install_skill "$shared_target"; then
+            [ -L "$shared_target" ] && rm "$shared_target"
+            ln -sf "$SCRIPT_DIR/_shared/$file" "$shared_target"
+        fi
+    done
+    echo "  ✓ shared conventions -> $skills_root/micro-squad-shared/"
+}
+
+install_symlinks_into "$SKILLS_DIR"
+
+if [ "$ALSO_CLAUDE" -eq 1 ]; then
+    echo ""
+    echo "Also installing into ~/.claude/skills/ (--claude)..."
+    install_symlinks_into "$HOME/.claude/skills"
+fi
+
+if [ "$ALSO_COPILOT" -eq 1 ]; then
+    echo ""
+    echo "Also installing into ~/.copilot/skills/ (--copilot)..."
+    install_symlinks_into "$HOME/.copilot/skills"
+fi
+
+# Migration: in-repo .squad/ sprints -> $ARTIFACTS_DIR/<repo-id>/
+maybe_migrate() {
+    if [ "$NO_MIGRATE" -eq 1 ]; then
+        return 0
+    fi
+    if [ ! -d "$PWD/.squad" ]; then
+        return 0
+    fi
+
+    # Check if any sprint dirs exist
+    local has_sprint=0
+    for state in "$PWD"/.squad/*/state.md; do
+        [ -e "$state" ] || continue
+        has_sprint=1
+        break
+    done
+    [ "$has_sprint" -eq 0 ] && [ ! -f "$PWD/.squad/learnings.md" ] && return 0
+
+    local repo_id
+    if repo_id=$(git -C "$PWD" rev-parse --show-toplevel 2>/dev/null); then
+        repo_id=$(basename "$repo_id")
+    else
+        repo_id=$(basename "$PWD")
+    fi
+    local target_root="$ARTIFACTS_DIR/$repo_id"
+
+    echo ""
+    echo "In-repo .squad/ directory detected:"
+    for sprint_dir in "$PWD"/.squad/*/; do
+        [ -d "$sprint_dir" ] || continue
+        local name size
+        name=$(basename "$sprint_dir")
+        size=$(du -sh "$sprint_dir" 2>/dev/null | cut -f1)
+        printf "  - %s  (%s)\n" "$name" "$size"
+    done
+    [ -f "$PWD/.squad/learnings.md" ] && printf "  - learnings.md\n"
+
+    echo ""
+    echo "Recommendation: m (move) — keeps the work repo clean; artifacts live in \$HOME/.agents/squad-artifacts/$repo_id/."
+    echo "  [m] move   — mv each sprint dir + learnings.md to $target_root/"
+    echo "  [c] copy   — cp -R (leaves originals in place; both copies will drift)"
+    echo "  [s] skip   — leave them alone for now (will reprompt on next run; use --no-migrate to silence)"
+    echo "  [a] abort  — exit setup without further changes"
+    printf "Choice [M/c/s/a]: "
+    local choice
+    read -r choice
+    case "$choice" in
+        ""|m|M)
+            mkdir -p "$target_root"
+            for sprint_dir in "$PWD"/.squad/*/; do
+                [ -d "$sprint_dir" ] || continue
+                local name="$(basename "$sprint_dir")"
+                if [ -e "$target_root/$name" ]; then
+                    printf "  ! %s already exists at target — skipping\n" "$name"
+                    continue
+                fi
+                if mv "$sprint_dir" "$target_root/"; then
+                    printf "  ✓ moved %s\n" "$name"
+                else
+                    printf "  ! failed to move %s — stopping (no rollback; finish manually)\n" "$name" >&2
+                    exit 1
+                fi
+            done
+            if [ -f "$PWD/.squad/learnings.md" ]; then
+                mv "$PWD/.squad/learnings.md" "$target_root/learnings.md" || true
+                printf "  ✓ moved learnings.md\n"
+            fi
+            rmdir "$PWD/.squad" 2>/dev/null || true
+            ;;
+        c|C)
+            mkdir -p "$target_root"
+            for sprint_dir in "$PWD"/.squad/*/; do
+                [ -d "$sprint_dir" ] || continue
+                local name="$(basename "$sprint_dir")"
+                if [ -e "$target_root/$name" ]; then
+                    printf "  ! %s already exists at target — skipping\n" "$name"
+                    continue
+                fi
+                cp -R "$sprint_dir" "$target_root/" && printf "  ✓ copied %s\n" "$name"
+            done
+            [ -f "$PWD/.squad/learnings.md" ] && cp "$PWD/.squad/learnings.md" "$target_root/learnings.md" && printf "  ✓ copied learnings.md\n"
+            printf "  note: originals left in %s/.squad/ — both copies will drift on next sprint\n" "$PWD"
+            ;;
+        s|S)
+            echo "  skipped — will prompt again on next ./setup run (or use --no-migrate)"
+            ;;
+        a|A)
+            echo "Aborted."
+            exit 1
+            ;;
+        *)
+            echo "Unknown choice; skipping migration."
+            ;;
+    esac
+}
+
+maybe_migrate
 
 echo ""
 echo "Installed ${#SKILLS[@]} skills to $SKILLS_DIR/"
+echo ""
+echo "Artifacts root: $ARTIFACTS_DIR/<repo-id>/"
+echo "Override with:  export SQUAD_DIR=/path/to/your/artifact/root"
 echo ""
 echo "Usage:"
 echo "  /squad add dark mode        full sprint"

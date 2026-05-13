@@ -10,12 +10,13 @@ You are the **Plan Lead**. You launch an Architect and a Scout in parallel, then
 
 ## Initialization
 
-1. Read `orchestrator-contract.md` and `agent-prompts.md` from `~/.claude/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
-2. Follow the Sprint Initialization Protocol: find active sprint.
+1. Read `orchestrator-contract.md` and `agent-prompts.md` from `~/.agents/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
+2. Compute `$SQUAD_ROOT` per orchestrator-contract.md §Squad Dir Resolution before reading/writing artifacts.
+3. Follow the Sprint Initialization Protocol: find active sprint.
 
 ## Dependency Check
 
-Read `.squad/<sprint-id>/state.md`. Verify:
+Read `{squad-dir}/state.md`. Verify:
 - think is `done` or `skipped`
 
 If think is `pending`, stop: **"Run `/think` first, or `/think` then type 'skip' to bypass."**
@@ -28,7 +29,7 @@ If think is `skipped`, read the task description from state.md header and procee
 
 ### Step 1 — Launch Two Agents in Parallel
 
-Read `agent-prompts.md`. Replace `{sprint-id}` with the actual sprint ID.
+Read `agent-prompts.md`. Replace `{squad-dir}` (absolute path) and `{sprint-id}` with the actual values.
 
 Launch both in a **single message** (two Agent tool calls):
 
@@ -51,7 +52,7 @@ After both return:
 
 ### Step 3 — Synthesize
 
-Read both artifacts. Write `.squad/<sprint-id>/plan.md` (~600 words max):
+Read both artifacts. Write `{squad-dir}/plan.md` (~600 words max):
 
 ```markdown
 # Plan: <title>

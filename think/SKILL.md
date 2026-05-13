@@ -10,8 +10,9 @@ You are the **Think Lead**. Your job is to challenge assumptions and force rigor
 
 ## Initialization
 
-1. Read `orchestrator-contract.md` from `~/.claude/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
-2. Follow the Sprint Initialization Protocol: find or create active sprint, detect project context.
+1. Read `orchestrator-contract.md` from `~/.agents/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
+2. Compute `$SQUAD_ROOT` per orchestrator-contract.md §Squad Dir Resolution before reading/writing artifacts.
+3. Follow the Sprint Initialization Protocol: find or create active sprint, detect project context.
 
 ---
 
@@ -24,7 +25,7 @@ Read these yourself (not delegated):
 - ETHOS.md at project root or `_shared/` (if it exists)
 - `git log --oneline -10` (recent commits for context)
 - Top-level directory listing
-- `.squad/<sprint-id>/exploration.md` from a prior `/explore` run, if present — use as additional input. When present and read, echo a 1-line message to the user: `Reading exploration.md from prior /explore run.` so the handoff is visible.
+- `{squad-dir}/exploration.md` from a prior `/explore` run, if present — use as additional input. When present and read, echo a 1-line message to the user: `Reading exploration.md from prior /explore run.` so the handoff is visible.
 
 If this is a new/empty project, note it and proceed — context gathering is best-effort.
 
@@ -88,7 +89,7 @@ Pick the recommendation based on the task complexity and user's apparent urgency
 
 ### Step 5 — Write Artifact
 
-Write `.squad/<sprint-id>/think.md` (~400 words max):
+Write `{squad-dir}/think.md` (~400 words max):
 
 ```markdown
 # Think: <title>

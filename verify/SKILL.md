@@ -141,7 +141,7 @@ After writing verdict.md, extract 1-3 key findings from FIX and TRIAGE items:
 
 1. Read verdict.md for FIX and TRIAGE items.
 2. For each actionable finding, format as: `- YYYY-MM-DD <sprint-slug>: <finding>`
-3. Append to `{squad-dir}/../learnings.md` (the per-repo learnings file, one level above the sprint dir).
+3. Append to `$SQUAD_ROOT/learnings.md` (the per-repo learnings file, one level above the sprint dir).
 4. If the file doesn't exist, create it with `# Learnings` followed by a blank line.
 5. If the file exceeds 50 entries after appending, trim the oldest 10.
 

@@ -10,16 +10,17 @@ Every skill MUST run these steps at the start:
 
 ### 1. Find Active Sprint
 ```
-Search for .squad/*/state.md files.
+Search for $SQUAD_ROOT/*/state.md files (see Squad Dir Resolution below).
 - If ONE exists with pending phases → resume it (read state.md for context)
 - If MULTIPLE exist → show list, ask user which to resume or start new
 - If NONE exist → create new sprint (only if task description provided)
 ```
 
 ### 2. Create Sprint Directory (new sprints only)
-- Format: `.squad/YYYY-MM-DD-<slug>/` where slug is 2-4 words from the task, kebab-case
+- Format: `$SQUAD_ROOT/YYYY-MM-DD-<slug>/` where slug is 2-4 words from the task, kebab-case
 - Create `state.md` with all phases set to `pending`
 - If a sprint with the same slug exists today, append `-2`, `-3`, etc.
+- Write `$SQUAD_ROOT/<sprint-id>/.repo-origin` containing the git remote URL (or repo toplevel path if no remote) — enables collision detection on future runs.
 
 ### 3. Detect Project Context (first phase only)
 Run this once per sprint and cache results in `state.md`:
@@ -41,6 +42,64 @@ Store in state.md header:
 base_branch: main
 test_command: npm test  # or "none detected"
 ```
+
+---
+
+## Squad Dir Resolution
+
+Every skill MUST resolve `$SQUAD_ROOT` at initialization, BEFORE reading or writing any artifact. Artifacts live OUTSIDE the user's working repo by default — there is no in-repo `.squad/` anymore.
+
+### Resolution rule (precedence)
+
+```
+1. If $SQUAD_DIR env var is set and non-empty:
+     SQUAD_ROOT="$SQUAD_DIR"
+   Else:
+     repo_id=$(_resolve_repo_id)
+     SQUAD_ROOT="$HOME/.agents/squad-artifacts/$repo_id"
+
+2. _resolve_repo_id():
+     if git rev-parse --show-toplevel >/dev/null 2>&1:
+       toplevel=$(git rev-parse --show-toplevel)
+       basename=$(basename "$toplevel")
+       remote=$(git remote get-url origin 2>/dev/null || echo "$toplevel")
+       id="$basename"
+       # Collision: if $HOME/.agents/squad-artifacts/$id/.repo-origin exists
+       # and its contents != "$remote", append a hash suffix:
+       #   id="$basename-$(printf %s "$remote" | shasum | cut -c1-7)"
+     else:
+       id=$(basename "$PWD")
+     echo "$id"
+
+3. mkdir -p "$SQUAD_ROOT"
+   test -w "$SQUAD_ROOT" || trigger Decision Point:
+     A) fall back to ~/.agents/squad-artifacts/<repo-id>
+     B) prompt user for a new path
+     C) abort
+   NEVER silently write elsewhere.
+
+4. On NEW sprint creation, write "$SQUAD_ROOT/<sprint-id>/.repo-origin"
+   containing the remote URL (or toplevel path if no remote).
+
+5. Cache the resolved values in state.md header:
+     squad_dir: <absolute path to $SQUAD_ROOT/<sprint-id>>
+     repo_id: <resolved id>
+   Subsequent skills in the same sprint reuse them without re-resolving.
+```
+
+### Placeholder token
+
+`{squad-dir}` (curly braces — matches existing `{sprint-id}`, `{base-branch}` style). The launching skill interpolates `{squad-dir}` to an **absolute path** — `$SQUAD_ROOT/<sprint-id>` — before every Agent tool call. Sub-agents never see the placeholder, only the resolved absolute path.
+
+All literal artifact paths in skill prompts and agent templates use `{squad-dir}/<artifact>.md`. No skill ever writes to `.squad/` in CWD.
+
+### Outside a git repo
+
+`repo_id = basename($PWD)`. Standalone skills (`/explore`, `/investigate`, `/retro`, `/skillify`) work fine. Skills that need git (`/verify`, `/ship`) still fail their own dependency checks.
+
+### `$SQUAD_DIR` override
+
+Users may set `SQUAD_DIR` in their shell to redirect artifacts (e.g., to a synced location, or to share between two repos that should pool sprints). When set, resolution skips repo-id computation entirely.
 
 ---
 
@@ -72,12 +131,14 @@ If a dependency is not met, tell the user: **"Cannot run /X — /Y must complete
 
 ### State File Format
 
-`.squad/<sprint-id>/state.md`:
+`{squad-dir}/state.md`:
 ```markdown
 # Sprint: <description>
 Started: <ISO date>
 Base branch: <detected>
 Test command: <detected or "none">
+squad_dir: /Users/me/.agents/squad-artifacts/<repo-id>/<sprint-id>
+repo_id: <resolved id>
 careful: true  # optional — present only when /squad was invoked with --careful
 
 | Phase | Status | Artifact | Updated |
@@ -95,7 +156,7 @@ careful: true  # optional — present only when /squad was invoked with --carefu
 ## Artifact Contract
 
 ### Naming
-All artifacts live in `.squad/<sprint-id>/`. Names are fixed — never rename or move them.
+All artifacts live in `{squad-dir}/`. Names are fixed — never rename or move them.
 
 ### Ownership
 Each phase writes ONLY its own artifacts. NEVER modify another phase's output.
@@ -131,7 +192,7 @@ If a required artifact doesn't exist:
 
 ## Learnings
 
-If `.squad/learnings.md` exists, read it for past findings. This file captures key findings from past sprints — things that went wrong, patterns discovered, edge cases hit.
+If `{squad-dir}/../learnings.md` exists, read it for past findings. This file lives one level above the active sprint dir, inside the repo's artifact root, so learnings are per-repo. This file captures key findings from past sprints — things that went wrong, patterns discovered, edge cases hit.
 
 - `/verify` appends 1-3 findings after each sprint review.
 - Format: `- YYYY-MM-DD <sprint-slug>: <finding>`
@@ -146,7 +207,7 @@ Agents are not required to act on every learning — they provide context, not m
 
 ### Launch Protocol
 1. Read `agent-prompts.md` for the template
-2. Replace ALL placeholders: `{sprint-id}`, `{base-branch}`, `{issues}`
+2. Replace ALL placeholders: `{squad-dir}`, `{sprint-id}`, `{base-branch}`, `{issues}`, `{test-command}`. `{squad-dir}` MUST be interpolated to an absolute path — sub-agents never see the placeholder.
 3. Launch via the Agent tool with the fully interpolated prompt
 4. For parallel agents: launch ALL in a single message (multiple Agent tool calls)
 

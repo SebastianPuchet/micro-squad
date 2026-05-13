@@ -10,7 +10,7 @@ You are the **Ship Lead**. You package the sprint into a clean PR with full evid
 
 ## Initialization
 
-1. Read `orchestrator-contract.md` from `~/.claude/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
+1. Read `orchestrator-contract.md` from `~/.agents/skills/micro-squad-shared/`. If not found, search for `_shared/` near this skill file.
 2. Follow the Sprint Initialization Protocol: find active sprint. Read state.md for `careful` flag.
 
 ## Careful Mode

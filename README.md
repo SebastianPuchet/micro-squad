@@ -50,7 +50,7 @@ Read [ETHOS.md](ETHOS.md) for the full philosophy.
 - **Decision Point Format** — Every gate presents context + recommendation + options with effort
 - **Careful mode** — `/squad --careful` enables checkpoints, blast-radius gates, no skip shortcuts
 - **State machine** — Enforced phase dependencies, resumable sprints, skip/stop support
-- **Artifact trail** — Everything in `.squad/`, inspectable, diffable, git-friendly
+- **Artifact trail** — Everything in `~/.agents/squad-artifacts/<repo-id>/`, inspectable, diffable, outside your working repo by default
 - **Artifact size budgets** — Agents produce concise output, no token bloat downstream
 - **Learning loop** — `/verify` captures findings, future agents start smarter
 - **Retrospectives** — `/retro` analyzes git stats, hotspots, and patterns
@@ -61,10 +61,34 @@ Read [ETHOS.md](ETHOS.md) for the full philosophy.
 
 ## Install
 
+Vendor-neutral default — both Claude Code and GitHub Copilot read from `~/.agents/skills/`:
+
 ```bash
-git clone https://github.com/SebastianPuchet/micro-squad.git ~/.claude/skills/micro-squad
-cd ~/.claude/skills/micro-squad && ./setup
+git clone https://github.com/SebastianPuchet/micro-squad.git ~/.agents/skills/micro-squad
+cd ~/.agents/skills/micro-squad && ./setup
 ```
+
+Flags:
+
+- `./setup --claude` — also symlink into `~/.claude/skills/` (for Claude Code users who haven't migrated yet)
+- `./setup --copilot` — also symlink into `~/.copilot/skills/`
+- `./setup --no-migrate` — skip the in-repo `.squad/` migration prompt
+
+### Where sprint artifacts live
+
+By default: `~/.agents/squad-artifacts/<repo-id>/<sprint-id>/`. Outside your working repo — nothing to add to `.gitignore`.
+
+Override with `SQUAD_DIR`:
+
+```bash
+export SQUAD_DIR=/path/to/your/artifact/root
+```
+
+When set, micro-squad writes all sprint artifacts under `$SQUAD_DIR/<sprint-id>/` instead of the per-repo default.
+
+### GitHub Copilot support
+
+The `~/.agents/skills/` path is the vendor-neutral standard. GitHub Copilot's Agent Skills reads SKILL.md files from this directory with the same frontmatter Claude uses — no separate install needed. If you want belt-and-suspenders, run `./setup --copilot` to also symlink to `~/.copilot/skills/`.
 
 ## Commands
 
@@ -121,11 +145,11 @@ micro-squad/
 
 ## Artifacts
 
-Each sprint creates `.squad/<sprint-id>/`:
+Each sprint creates `~/.agents/squad-artifacts/<repo-id>/<sprint-id>/` (or `$SQUAD_DIR/<sprint-id>/` if overridden):
 
 ```
-.squad/2025-03-27-dark-mode/
-├── state.md           # Phase tracking + project context
+~/.agents/squad-artifacts/myrepo/2025-03-27-dark-mode/
+├── state.md           # Phase tracking + project context (squad_dir + repo_id cached here)
 ├── think.md           # Problem, alternatives, scope decision
 ├── architecture.md    # Data flows, file changes, edge cases
 ├── scout-report.md    # Existing patterns, reusable code, risks
@@ -142,6 +166,8 @@ Each sprint creates `.squad/<sprint-id>/`:
 ├── exploration.md     # /explore output (if run inside sprint)
 └── retro.md           # Sprint retrospective (if run)
 ```
+
+`learnings.md` lives one level up at `~/.agents/squad-artifacts/<repo-id>/learnings.md` — per-repo, shared across all sprints for that repo.
 
 ## The Judgment Day Pattern
 

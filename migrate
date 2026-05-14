@@ -164,11 +164,11 @@ case "$choice" in
         ;;
     b|B)
         mkdir -p "$target_root"
-        local copied=0
-        local copy_failed=0
+        copied=0
+        copy_failed=0
         for sprint_dir in "$PWD"/.squad/*/; do
             [ -d "$sprint_dir" ] || continue
-            local name="$(basename "$sprint_dir")"
+            name="$(basename "$sprint_dir")"
             if [ -e "$target_root/$name" ]; then
                 printf "  - %s already exists at target — skipping\n" "$name"
                 continue

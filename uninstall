@@ -153,13 +153,19 @@ if [ "$ASSUME_YES" -eq 0 ]; then
 fi
 
 removed=0
+failed=0
 for link in "${TO_REMOVE_SYMLINKS[@]}"; do
-    rm "$link" && removed=$((removed + 1))
+    if rm "$link" 2>/dev/null; then
+        removed=$((removed + 1))
+    else
+        printf "uninstall: failed to remove %s\n" "$link" >&2
+        failed=$((failed + 1))
+    fi
 done
 
 for dir in "${TO_REMOVE_DIRS[@]}"; do
     rmdir "$dir" 2>/dev/null || true
 done
 
-echo "Removed $removed symlink(s)."
+echo "Removed $removed symlink(s)${failed:+, $failed failed}."
 echo "Done."

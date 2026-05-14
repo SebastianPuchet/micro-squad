@@ -1,0 +1,165 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+
+# Portable realpath — macOS lacks readlink -f
+realpath_portable() {
+    local p="$1"
+    if command -v greadlink >/dev/null 2>&1; then
+        greadlink -f "$p"
+    elif readlink -f / >/dev/null 2>&1; then
+        readlink -f "$p"
+    else
+        python3 -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$p" 2>/dev/null \
+            || (cd "$(dirname "$p")" 2>/dev/null && printf "%s/%s\n" "$(pwd -P)" "$(basename "$p")")
+    fi
+}
+
+SCRIPT_DIR_REAL="$(realpath_portable "$SCRIPT_DIR")"
+
+ASSUME_YES=0
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --yes|-y) ASSUME_YES=1 ;;
+        --help|-h)
+            cat <<EOF
+micro-squad uninstall
+
+Usage: ./uninstall [--yes]
+
+  --yes, -y      Assume yes to the confirmation prompt
+
+Removes all micro-squad skill symlinks from:
+  ~/.agents/skills/
+  ~/.claude/skills/
+  ~/.copilot/skills/
+
+Only removes symlinks that point into this source directory.
+Leaves ~/.agents/squad-artifacts/ untouched.
+EOF
+            exit 0
+            ;;
+        *)
+            printf "uninstall: unknown flag: %s\n" "$1" >&2
+            printf "uninstall: run ./uninstall --help for usage.\n" >&2
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+SKILLS=(squad think plan build verify secure investigate ship retro skillify explore)
+
+INSTALL_PATHS=(
+    "$HOME/.agents/skills"
+    "$HOME/.claude/skills"
+    "$HOME/.copilot/skills"
+)
+
+SHARED_FILES=(orchestrator-contract.md agent-prompts.md)
+
+# Collect what would be removed
+declare -a TO_REMOVE_SYMLINKS=()
+declare -a TO_REMOVE_DIRS=()
+
+for skills_root in "${INSTALL_PATHS[@]}"; do
+    [ -d "$skills_root" ] || continue
+
+    for skill in "${SKILLS[@]}"; do
+        local_link="$skills_root/$skill/SKILL.md"
+        if [ -L "$local_link" ]; then
+            resolved="$(realpath_portable "$local_link" 2>/dev/null || echo "")"
+            if [[ -n "$resolved" && "$resolved" = "$SCRIPT_DIR_REAL"/* ]]; then
+                TO_REMOVE_SYMLINKS+=("$local_link")
+                TO_REMOVE_DIRS+=("$skills_root/$skill")
+            fi
+        fi
+    done
+
+    shared_dir="$skills_root/micro-squad-shared"
+    if [ -d "$shared_dir" ]; then
+        shared_symlinks_added=0
+        for file in "${SHARED_FILES[@]}"; do
+            local_link="$shared_dir/$file"
+            if [ -L "$local_link" ]; then
+                resolved="$(realpath_portable "$local_link" 2>/dev/null || echo "")"
+                if [[ -n "$resolved" && "$resolved" = "$SCRIPT_DIR_REAL"/* ]]; then
+                    TO_REMOVE_SYMLINKS+=("$local_link")
+                    shared_symlinks_added=$((shared_symlinks_added + 1))
+                fi
+            fi
+        done
+        if [ "$shared_symlinks_added" -gt 0 ]; then
+            TO_REMOVE_DIRS+=("$shared_dir")
+        fi
+    fi
+done
+
+if [ "${#TO_REMOVE_SYMLINKS[@]}" -eq 0 ]; then
+    echo "micro-squad — nothing to uninstall (no symlinks found pointing to $SCRIPT_DIR_REAL)."
+    exit 0
+fi
+
+echo "micro-squad — uninstalling skills..."
+echo ""
+echo "Will remove symlinks pointing to: $SCRIPT_DIR_REAL"
+echo ""
+for skills_root in "${INSTALL_PATHS[@]}"; do
+    [ -d "$skills_root" ] || continue
+    has_any=0
+    for link in "${TO_REMOVE_SYMLINKS[@]}"; do
+        if [[ "$link" = "$skills_root"/* ]]; then
+            has_any=1
+            break
+        fi
+    done
+    [ "$has_any" -eq 0 ] && continue
+    echo "  $skills_root/"
+    for skill in "${SKILLS[@]}"; do
+        local_link="$skills_root/$skill/SKILL.md"
+        for link in "${TO_REMOVE_SYMLINKS[@]}"; do
+            if [ "$link" = "$local_link" ]; then
+                printf "    ✗ %s\n" "$skill"
+                break
+            fi
+        done
+    done
+    for link in "${TO_REMOVE_SYMLINKS[@]}"; do
+        if [[ "$link" = "$skills_root/micro-squad-shared"/* ]]; then
+            printf "    ✗ micro-squad-shared/\n"
+            break
+        fi
+    done
+done
+echo ""
+echo "Artifacts in ~/.agents/squad-artifacts/ are NOT removed."
+echo ""
+
+if [ "$ASSUME_YES" -eq 0 ]; then
+    printf "Proceed? [y/N]: "
+    if [ -t 0 ]; then
+        read -r confirm
+    else
+        echo ""
+        echo "uninstall: non-interactive stdin — use --yes to confirm."
+        exit 1
+    fi
+    case "$confirm" in
+        y|Y) ;;
+        *) echo "uninstall: aborted."; exit 0 ;;
+    esac
+fi
+
+removed=0
+for link in "${TO_REMOVE_SYMLINKS[@]}"; do
+    rm "$link" && removed=$((removed + 1))
+done
+
+for dir in "${TO_REMOVE_DIRS[@]}"; do
+    rmdir "$dir" 2>/dev/null || true
+done
+
+echo "Removed $removed symlink(s)."
+echo "Done."

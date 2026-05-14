@@ -25,7 +25,7 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --dry-run)    DRY_RUN=1 ;;
         --yes|-y)     ASSUME_YES=1 ;;
-        --no-migrate) NO_MIGRATE=1 ;;
+        --no-migrate) NO_MIGRATE=1; printf "migrate: --no-migrate passed — exiting without migrating.\n"; exit 0 ;;
         --help|-h)
             cat <<EOF
 micro-squad migrate

@@ -1,10 +1,10 @@
 # micro-squad
 
-**Drop-in multi-agent sprint for Claude Code.**
+**Drop-in multi-agent sprint for AI coding assistants.**
 
 No binaries. No servers. No external dependencies. Just Markdown skill files.
 
-micro-squad turns Claude Code into a coordinated engineering team. An orchestrator delegates to parallel sub-agents that think, plan, build, review, and ship — using Claude Code's native Agent tool.
+micro-squad turns your AI coding assistant into a coordinated engineering team. An orchestrator delegates to parallel sub-agents that think, plan, build, review, and ship — using native agent delegation (Claude Code's Agent tool, GitHub Copilot agent skills, or any runtime that reads SKILL.md files).
 
 ## What happens when you run `/squad`
 

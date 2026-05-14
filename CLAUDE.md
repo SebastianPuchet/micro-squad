@@ -2,7 +2,7 @@
 
 ## What This Is
 
-micro-squad is a drop-in multi-agent sprint system for Claude Code. It coordinates sub-agents through think, plan, build, verify, and ship phases using only Markdown skill files and Claude Code's native Agent tool.
+micro-squad is a drop-in multi-agent sprint system for AI coding assistants (Claude Code, GitHub Copilot). It coordinates sub-agents through think, plan, build, verify, and ship phases using only Markdown skill files and native agent delegation.
 
 No binaries. No servers. No external dependencies.
 

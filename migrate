@@ -1,0 +1,190 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Portable realpath — macOS lacks readlink -f
+realpath_portable() {
+    local p="$1"
+    if command -v greadlink >/dev/null 2>&1; then
+        greadlink -f "$p"
+    elif readlink -f / >/dev/null 2>&1; then
+        readlink -f "$p"
+    else
+        python3 -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$p" 2>/dev/null \
+            || (cd "$(dirname "$p")" 2>/dev/null && printf "%s/%s\n" "$(pwd -P)" "$(basename "$p")")
+    fi
+}
+
+ARTIFACTS_DIR="${SQUAD_DIR:-$HOME/.agents/squad-artifacts}"
+
+# Flags
+DRY_RUN=0
+ASSUME_YES=0
+NO_MIGRATE=0
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --dry-run)    DRY_RUN=1 ;;
+        --yes|-y)     ASSUME_YES=1 ;;
+        --no-migrate) NO_MIGRATE=1 ;;
+        --help|-h)
+            cat <<EOF
+micro-squad migrate
+
+Usage: ./migrate [--dry-run] [--yes] [--no-migrate] [--help]
+
+  --dry-run        Preview what would be migrated; make no changes
+  --yes, -y        Assume yes to all prompts (default: move)
+  --no-migrate     No-op; exit 0 (kept for backwards compat with setup users)
+  --help, -h       Show this help
+
+Migrates in-repo .squad/ sprint artifacts to \$ARTIFACTS_DIR/<repo-id>/.
+Default artifacts root: ~/.agents/squad-artifacts/
+Override with: export SQUAD_DIR=/path/to/your/artifact/root
+
+Run from the root of the repo that contains the .squad/ directory.
+EOF
+            exit 0
+            ;;
+        *)
+            printf "migrate: unknown flag: %s\n" "$1" >&2
+            printf "migrate: run ./migrate --help for usage.\n" >&2
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+# --no-migrate: silent no-op for backwards compat
+if [ "$NO_MIGRATE" -eq 1 ]; then
+    exit 0
+fi
+
+# Guard: .squad/ must exist
+if [ ! -d "$PWD/.squad" ]; then
+    echo "Nothing to migrate."
+    exit 0
+fi
+
+# Guard: must have sprint dirs or learnings.md
+has_sprint=0
+for state in "$PWD"/.squad/*/state.md; do
+    [ -e "$state" ] || continue
+    has_sprint=1
+    break
+done
+if [ "$has_sprint" -eq 0 ] && [ ! -f "$PWD/.squad/learnings.md" ]; then
+    echo "Nothing to migrate."
+    exit 0
+fi
+
+# Resolve repo_id
+repo_id=""
+if repo_id=$(git -C "$PWD" rev-parse --show-toplevel 2>/dev/null); then
+    repo_id=$(basename "$repo_id")
+else
+    repo_id=$(basename "$PWD")
+fi
+target_root="$ARTIFACTS_DIR/$repo_id"
+
+echo ""
+echo "In-repo .squad/ directory detected. Each sprint dir would move to its destination below."
+echo ""
+for sprint_dir in "$PWD"/.squad/*/; do
+    [ -d "$sprint_dir" ] || continue
+    name=$(basename "$sprint_dir")
+    size=$(du -sh "$sprint_dir" 2>/dev/null | cut -f1)
+    printf "  - %-40s  →  %s/%s/  (%s)\n" "$name" "$target_root" "$name" "$size"
+done
+[ -f "$PWD/.squad/learnings.md" ] && printf "  - %-40s  →  %s/learnings.md\n" "learnings.md" "$target_root"
+
+if [ "$DRY_RUN" -eq 1 ]; then
+    echo ""
+    echo "(dry-run — no changes made)"
+    exit 0
+fi
+
+echo ""
+echo "Recommendation: A (move) because it keeps the work repo clean; artifacts live in \$HOME/.agents/squad-artifacts/$repo_id/."
+echo ""
+echo "A) move   [mv each sprint dir + learnings.md to $target_root/]"
+echo "B) copy   [cp -R; leaves originals in place; both copies will drift]"
+echo "C) skip   [leave them alone; reprompts on next run; use --no-migrate to silence]"
+echo "D) abort  [exit without changes]"
+echo ""
+printf "Choice [A]: "
+choice=""
+if [ -t 0 ]; then
+    read -r choice
+else
+    echo ""
+    echo "migrate: non-interactive stdin — defaulting to <skip>. Use --yes to override."
+    exit 0
+fi
+if [ "$ASSUME_YES" -eq 1 ] && [ -z "$choice" ]; then
+    choice="a"
+fi
+case "$choice" in
+    ""|a|A)
+        mkdir -p "$target_root"
+        moved=0
+        failed=0
+        skipped=0
+        failed_names=""
+        for sprint_dir in "$PWD"/.squad/*/; do
+            [ -d "$sprint_dir" ] || continue
+            name="$(basename "$sprint_dir")"
+            if [ -e "$target_root/$name" ]; then
+                printf "  - %s already exists at target — skipping\n" "$name"
+                skipped=$((skipped + 1))
+                continue
+            fi
+            if mv "$sprint_dir" "$target_root/" 2>/dev/null; then
+                printf "  ✓ moved %s\n" "$name"
+                moved=$((moved + 1))
+            else
+                printf "  migrate: failed to move %s — left in place, continuing\n" "$name" >&2
+                failed=$((failed + 1))
+                failed_names="$failed_names $name"
+            fi
+        done
+        if [ -f "$PWD/.squad/learnings.md" ]; then
+            if mv "$PWD/.squad/learnings.md" "$target_root/learnings.md" 2>/dev/null; then
+                printf "  ✓ moved learnings.md\n"
+                moved=$((moved + 1))
+            else
+                printf "  migrate: failed to move learnings.md — left in place\n" >&2
+                failed=$((failed + 1))
+            fi
+        fi
+        rmdir "$PWD/.squad" 2>/dev/null || true
+        echo ""
+        echo "Migration summary: $moved moved, $failed failed, $skipped skipped."
+        if [ -n "$failed_names" ]; then
+            echo "  Failed dirs (still in $PWD/.squad/):$failed_names"
+        fi
+        ;;
+    b|B)
+        mkdir -p "$target_root"
+        for sprint_dir in "$PWD"/.squad/*/; do
+            [ -d "$sprint_dir" ] || continue
+            name="$(basename "$sprint_dir")"
+            if [ -e "$target_root/$name" ]; then
+                printf "  - %s already exists at target — skipping\n" "$name"
+                continue
+            fi
+            cp -R "$sprint_dir" "$target_root/" && printf "  ✓ copied %s\n" "$name"
+        done
+        [ -f "$PWD/.squad/learnings.md" ] && cp "$PWD/.squad/learnings.md" "$target_root/learnings.md" && printf "  ✓ copied learnings.md\n"
+        printf "  note: originals left in %s/.squad/ — both copies will drift on next sprint\n" "$PWD"
+        ;;
+    c|C)
+        echo "  skipped — use --no-migrate to suppress this prompt"
+        ;;
+    d|D)
+        echo "migrate: aborted."
+        exit 1
+        ;;
+    *)
+        echo "migrate: unknown choice; skipping migration."
+        ;;
+esac

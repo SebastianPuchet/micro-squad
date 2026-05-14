@@ -80,7 +80,7 @@ Flags:
 
 - `./setup --claude` — also symlink into `~/.claude/skills/` (for Claude Code users who haven't migrated yet)
 - `./setup --copilot` — also symlink into `~/.copilot/skills/`
-- `./setup --no-migrate` — deprecated; use `./migrate --no-migrate` instead
+- `./setup --no-migrate` — deprecated; migration is now handled by `./migrate`. This flag is ignored.
 - `./setup --yes` — assume yes to all prompts (foreign-skill collision: overwrite)
 
 ### Migrating artifacts

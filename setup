@@ -40,7 +40,7 @@ Usage: ./setup [--claude] [--copilot] [--no-migrate] [--yes]
 
   --claude       Also symlink skills into ~/.claude/skills/
   --copilot      Also symlink skills into ~/.copilot/skills/
-  --no-migrate   Deprecated. Use ./migrate --no-migrate instead.
+  --no-migrate   Deprecated; migration is now handled by ./migrate. This flag is ignored.
   --yes, -y      Assume yes to all prompts (foreign skill: overwrite)
 
 Default install path: ~/.agents/skills/  (read by both Claude and Copilot)

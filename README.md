@@ -83,6 +83,16 @@ Flags:
 - `./setup --no-migrate` — skip the in-repo `.squad/` migration prompt
 - `./setup --yes` — assume yes to all prompts (migration: move; foreign-skill collision: overwrite)
 
+### Uninstalling
+
+```bash
+cd ~/.agents/skills/micro-squad && ./uninstall
+```
+
+Removes all skill symlinks from `~/.agents/skills/`, `~/.claude/skills/`, and `~/.copilot/skills/` — only symlinks that point into this source directory. Sprint artifacts in `~/.agents/squad-artifacts/` are left untouched.
+
+- `./uninstall --yes` — skip the confirmation prompt
+
 ### GitHub Copilot support
 
 The `~/.agents/skills/` path is the vendor-neutral standard. GitHub Copilot's Agent Skills reads SKILL.md files from this directory with the same frontmatter Claude uses — no separate install needed. If you want belt-and-suspenders, run `./setup --copilot` to also symlink to `~/.copilot/skills/`.

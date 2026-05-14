@@ -4,7 +4,7 @@
 
 No binaries. No servers. No external dependencies. Just Markdown skill files.
 
-micro-squad turns Claude Code or GitHub Copilot into a coordinated engineering team. An orchestrator delegates to parallel sub-agents that think, plan, build, review, and ship — using each assistant's native agent support.
+micro-squad turns Claude Code and GitHub Copilot into a coordinated engineering team. An orchestrator delegates to parallel sub-agents that think, plan, build, review, and ship — using Claude Code's Agent tool or Copilot's agent skills.
 
 ## What happens when you run `/squad`
 
@@ -178,7 +178,7 @@ micro-squad/
 │   ├── orchestrator-contract.md  # State machine, artifact contract, rules
 │   └── agent-prompts.md          # All sub-agent prompt templates
 ├── ETHOS.md                    # Builder philosophy
-├── CLAUDE.md                   # Project context for Claude Code
+├── CLAUDE.md                   # Project context for Claude Code and GitHub Copilot
 ├── AGENTS.md                   # Skill index + dependency graph
 └── setup                       # Installs all skills
 ```

@@ -67,7 +67,7 @@ What `./setup` does by default:
 
 1. Symlinks every skill's `SKILL.md` into `~/.agents/skills/` (read by both Claude Code and GitHub Copilot).
 2. Creates `~/.agents/squad-artifacts/<repo-id>/` as the sprint artifact root (outside your working repo — nothing to `.gitignore`).
-3. If an in-repo `.squad/` directory from a previous version exists, prompts you interactively to migrate it.
+3. Prints a one-line hint if you have an in-repo `.squad/` directory from a previous version (run `./migrate` to move it).
 
 ```bash
 git clone https://github.com/SebastianPuchet/micro-squad.git ~/.agents/skills/micro-squad
@@ -80,8 +80,20 @@ Flags:
 
 - `./setup --claude` — also symlink into `~/.claude/skills/` (for Claude Code users who haven't migrated yet)
 - `./setup --copilot` — also symlink into `~/.copilot/skills/`
-- `./setup --no-migrate` — skip the in-repo `.squad/` migration prompt
-- `./setup --yes` — assume yes to all prompts (migration: move; foreign-skill collision: overwrite)
+- `./setup --no-migrate` — deprecated; migration is now handled by `./migrate`. This flag is ignored.
+- `./setup --yes` — assume yes to all prompts (foreign-skill collision: overwrite)
+
+### Migrating artifacts
+
+If you have in-repo `.squad/` sprint dirs from an older version, run:
+
+```bash
+./migrate            # interactive
+./migrate --dry-run  # preview without changes
+./migrate --yes      # non-interactive (default: move)
+```
+
+Moves sprint dirs and `learnings.md` from `.squad/` to `~/.agents/squad-artifacts/<repo-id>/` and removes the now-empty `.squad/` directory. Respects `$SQUAD_DIR` if set.
 
 ### Uninstalling
 

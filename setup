@@ -163,7 +163,9 @@ if [ "$ALSO_COPILOT" -eq 1 ]; then
     install_symlinks_into "$HOME/.copilot/skills"
 fi
 
-echo "To migrate in-repo .squad/ artifacts: ./migrate"
+if [ -d "$PWD/.squad" ]; then
+    echo "To migrate in-repo .squad/ artifacts: ./migrate"
+fi
 
 # Compute resolved repo-id for the final summary
 SUMMARY_REPO_ID=""

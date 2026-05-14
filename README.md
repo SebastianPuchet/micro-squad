@@ -8,26 +8,31 @@ micro-squad turns Claude Code into a coordinated engineering team. An orchestrat
 
 ## What happens when you run `/squad`
 
-```
-You: /squad add dark mode support
+```mermaid
+flowchart TD
+    A["/squad add dark mode support"] --> B
 
-THINK ─── Forcing questions, explore alternatives
-          You pick scope: EXPAND / SELECTIVE / HOLD / REDUCE
-              │
-PLAN ─────── Architect ──┐ parallel    Unified plan with
-              Scout ─────┘              effort estimates
-              │
-BUILD ─────── Builder implements with atomic commits
-              Auto-reverts on regression, 3-strike escalation
-              │
-VERIFY ───── Eng ───────┐
-              DevEx ─────┤ parallel    Consensus table:
-              Design ────┤              FIX / TRIAGE / DISMISS
-              QA Agent ──┘
-              │
-              Fix Agent → Re-review (max 2 rounds)
-              │
-SHIP ──────── Commit + PR with full evidence trail
+    B["THINK\nForcing questions, explore alternatives\nYou pick scope: EXPAND / SELECTIVE / HOLD / REDUCE"]
+    B --> C1 & C2
+
+    subgraph PLAN ["PLAN — parallel"]
+        C1[Architect]
+        C2[Scout]
+    end
+
+    C1 & C2 --> D["BUILD\nAtomic commits · auto-revert on regression · 3-strike escalation"]
+
+    D --> E1 & E2 & E3 & E4
+
+    subgraph VERIFY ["VERIFY — parallel"]
+        E1[Eng]
+        E2[DevEx]
+        E3[Design]
+        E4[QA Agent]
+    end
+
+    E1 & E2 & E3 & E4 --> F["Fix Agent\nRe-review · max 2 rounds\nConsensus: FIX / TRIAGE / DISMISS"]
+    F --> G["SHIP\nCommit + PR with full evidence trail"]
 ```
 
 ## Why

@@ -113,15 +113,14 @@ echo "D) abort  [exit without changes]"
 echo ""
 printf "Choice [A]: "
 choice=""
-if [ -t 0 ]; then
+if [ "$ASSUME_YES" -eq 1 ]; then
+    choice="a"
+elif [ -t 0 ]; then
     read -r choice
 else
     echo ""
     echo "migrate: non-interactive stdin — defaulting to <skip>. Use --yes to override."
     exit 0
-fi
-if [ "$ASSUME_YES" -eq 1 ] && [ -z "$choice" ]; then
-    choice="a"
 fi
 case "$choice" in
     ""|a|A)

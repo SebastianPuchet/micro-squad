@@ -166,7 +166,7 @@ Created /<name>:
   - registered in CLAUDE.md
 
 Next: run `./setup` from the repo root to symlink the new skill.
-Then `/<name>` will be available in Claude Code and any assistant that reads from `~/.agents/skills/`.
+Then `/<name>` will be available in Claude Code and GitHub Copilot.
 ```
 
 Do NOT run `./setup` automatically. The user runs it.
